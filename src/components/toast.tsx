@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, type ReactNode } from 'react';
 
 type ToastVariant = 'default' | 'success' | 'error' | 'warning' | 'info';
 
@@ -8,6 +8,11 @@ interface ToastOptions {
   description?: string;
   variant?: ToastVariant;
   duration?: number; // milliseconds
+}
+
+interface ToastItem extends ToastOptions {
+  id: string;
+  variant: ToastVariant;
 }
 
 interface ToastContextType {
@@ -30,7 +35,7 @@ interface ToastProviderProps {
 }
 
 export const ToastProvider = ({ children }: ToastProviderProps) => {
-  const [toasts, setToasts] = useState<ToastOptions[]>([]);
+  const [toasts, setToasts] = useState<ToastItem[]>([]);
 
   const toast = (options: ToastOptions) => {
     const id = options.id || Math.random().toString(36).substr(2, 9);
@@ -61,7 +66,7 @@ export const ToastProvider = ({ children }: ToastProviderProps) => {
 };
 
 type ToastContainerProps = {
-  toasts: ToastOptions[];
+  toasts: ToastItem[];
   onRemove: (id: string) => void;
 };
 

@@ -58,7 +58,7 @@ export const CardModal = ({ card, onClose, onUpdate, onDelete }: CardModalProps)
       onUpdate(data);
       onClose();
     } else {
-      toast({ title: 'Error saving card', description: error.message, variant: 'error' });
+      toast({ title: 'Error saving card', description: error?.message || 'Unknown error', variant: 'error' });
     }
   };
 
@@ -67,7 +67,7 @@ export const CardModal = ({ card, onClose, onUpdate, onDelete }: CardModalProps)
     const { error } = await supabase.from('cards').delete().eq('id', card.id);
     setSaving(false);
     if (error) {
-      toast({ title: 'Error deleting card', description: error.message, variant: 'error' });
+      toast({ title: 'Error deleting card', description: error?.message || 'Unknown error', variant: 'error' });
     } else {
       toast({ title: 'Card deleted', variant: 'success' });
       onDelete(card.id);
