@@ -27,9 +27,18 @@ create table cards (
   title text not null,
   description text,
   position integer not null default 0,
+  labels text[] default '{}',
+  due_date timestamp with time zone,
   created_at timestamp with time zone default now(),
   updated_at timestamp with time zone default now()
 );
+
+-- Auto-update `updated_at` trigger for cards
+create extension if not exists moddatetime schema extensions;
+
+create trigger handle_cards_updated_at
+  before update on cards
+  for each row execute function extensions.moddatetime(updated_at);
 
 -- Board members table: manages multi-user access to boards
 create table board_members (
@@ -228,3 +237,90 @@ create policy "Users can insert retros for boards they are members of"
     where board_id = retros.board_id
     and user_id = auth.uid()
   ));
+
+create policy "Users can delete retros of boards they own"
+  on retros
+  for delete
+  using (exists (
+    select 1 from board_members bm
+    where bm.board_id = retros.board_id
+    and bm.user_id = auth.uid()
+    and bm.role = 'owner'
+  ));
+
+-- Migration helpers (safe to re-run on existing databases that were created before these columns/triggers existed):
+do $$
+begin
+  if not exists (select 1 from information_schema.columns where table_name = 'cards' and column_name = 'labels') then
+    alter table cards add column labels text[] default '{}';
+  end if;
+  if not exists (select 1 from information_schema.columns where table_name = 'cards' and column_name = 'due_date') then
+    alter table cards add column due_date timestamp with time zone;
+  end if;
+end
+$$;
+
+create extension if not exists moddatetime schema extensions;
+
+drop trigger if exists handle_cards_updated_at on cards;
+create trigger handle_cards_updated_at
+  before update on cards
+  for each row execute function extensions.moddatetime(updated_at);
+
+-- Invite via Link Feature
+do $$
+begin
+  if not exists (select 1 from information_schema.columns where table_name = 'boards' and column_name = 'invite_token') then
+    alter table boards add column invite_token uuid;
+  end if;
+end
+$$;
+
+-- RPC to generate a new invite token (only owners)
+create or replace function generate_invite_token(p_board_id uuid)
+returns uuid
+language plpgsql
+security definer
+as $$
+declare
+  v_token uuid;
+begin
+  if not exists (
+    select 1 from board_members
+    where board_id = p_board_id
+    and user_id = auth.uid()
+    and role = 'owner'
+  ) then
+    raise exception 'Only board owners can generate invite tokens';
+  end if;
+
+  v_token := gen_random_uuid();
+  
+  update boards
+  set invite_token = v_token
+  where id = p_board_id;
+  
+  return v_token;
+end;
+$$;
+
+-- RPC to join a board via token
+create or replace function join_board(p_board_id uuid, p_token uuid)
+returns void
+language plpgsql
+security definer
+as $$
+begin
+  if not exists (
+    select 1 from boards
+    where id = p_board_id
+    and invite_token = p_token
+  ) then
+    raise exception 'Invalid invite token or board does not exist';
+  end if;
+
+  insert into board_members (board_id, user_id, role)
+  values (p_board_id, auth.uid(), 'member')
+  on conflict (board_id, user_id) do nothing;
+end;
+$$;

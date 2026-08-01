@@ -98,9 +98,13 @@ The database is heavily locked down. By default, no one can read or write anythi
 * *"Users can view boards they are a member of"*
 * *"Users can insert columns on boards they own"*
 
-**⚠️ IMPORTANT TECHNICAL DEBT NOTE:** 
-During development, we encountered an issue where PostgreSQL would throw an infinite recursion error when trying to validate permissions for deleting cards/columns. To fix the immediate UI block, we temporarily set the `delete` policies for columns and cards to `using (true)` (The Nuclear Option). 
-*This means any authenticated user can technically send a raw API request to delete any card in the database.* Before launching this to a massive public audience, the RLS policies for `DELETE` on `cards` and `columns` must be rewritten using an optimized `JOIN` that avoids recursion.
+**⚠️ DEPLOYMENT ACTION REQUIRED:**
+The `schema.sql` now has correct, JOIN-based DELETE policies for `columns` and `cards`. However, if your **deployed Supabase** database was created before this fix, it may still have the old permissive `using (true)` policies.
+
+**Before going live, follow the steps in [`SECURITY_VERIFICATION.md`](./SECURITY_VERIFICATION.md)** to verify and fix your production Supabase RLS policies using the SQL Editor.
+
+### S2 — Anon Key Exposure is Intentional
+You will see the `VITE_SUPABASE_ANON_KEY` exposed in the client bundle. **This is completely safe and intentional.** Supabase uses this key to identify the *project*, not to grant administrative access. All data access is strictly governed by the RLS policies and JWT session token.
 
 ---
 

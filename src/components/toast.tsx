@@ -72,7 +72,7 @@ type ToastContainerProps = {
 
 const ToastContainer = ({ toasts, onRemove }: ToastContainerProps) => {
   return (
-    <div className="fixed top-4 right-4 z-50 flex flex-col gap-4 w-80">
+    <div className="fixed top-[68px] right-4 z-[60] flex flex-col gap-4 w-80">
       {toasts.map((toast) => (
         <div
           key={toast.id}
@@ -87,14 +87,14 @@ const ToastContainer = ({ toasts, onRemove }: ToastContainerProps) => {
               ? 'bg-blue-50 border-blue-200 text-blue-800'
               : 'bg-zinc-50 border-zinc-200 text-zinc-800'
           } ${toast.variant === 'success'
-              ? 'dark:bg-green-900/20 dark:border-green-800 dark:text-green-200'
+              ? 'dark:bg-green-900/20 dark:border-green-700/60 dark:text-green-200'
               : toast.variant === 'error'
-              ? 'dark:bg-red-900/20 dark:border-red-800 dark:text-red-200'
+              ? 'dark:bg-red-900/20 dark:border-red-700/60 dark:text-red-200'
               : toast.variant === 'warning'
-              ? 'dark:bg-yellow-900/20 dark:border-yellow-800 dark:text-yellow-200'
+              ? 'dark:bg-yellow-900/20 dark:border-yellow-700/60 dark:text-yellow-200'
               : toast.variant === 'info'
-              ? 'dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-200'
-              : 'dark:bg-zinc-900/20 dark:border-zinc-800 dark:text-zinc-200'} dark:border-[#0c0c0d]/80 dark:rounded-lg`}
+              ? 'dark:bg-blue-900/20 dark:border-blue-700/60 dark:text-blue-200'
+              : 'dark:bg-zinc-900/60 dark:border-zinc-700/80 dark:text-zinc-200'}`}
         >
           <div className="flex-shrink-0 flex h-3.5 w-3.5 items-center justify-center">
             {toast.variant === 'success' && (

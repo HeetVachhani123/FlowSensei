@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import ReactMarkdown from 'react-markdown';
+import { useToast } from '../toast';
 
 type Retro = {
   id: string;
@@ -19,6 +20,9 @@ export const RetroModal = ({ boardId, onClose }: RetroModalProps) => {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [selectedRetro, setSelectedRetro] = useState<Retro | null>(null);
+  const [deletingRetroId, setDeletingRetroId] = useState<string | null>(null);
+  const lastGenerateTime = React.useRef(0);  // S1: rate limiting
+  const { toast } = useToast();
 
   useEffect(() => {
     fetchRetros();
@@ -46,11 +50,30 @@ export const RetroModal = ({ boardId, onClose }: RetroModalProps) => {
   };
 
   const handleGenerate = async () => {
+    // S1: 5-second rate limit cooldown
+    const now = Date.now();
+    if (now - lastGenerateTime.current < 5000) {
+      toast({ title: 'Please wait', description: 'You can only generate a retro every few seconds.', variant: 'warning' });
+      return;
+    }
+    lastGenerateTime.current = now;
+    
     setGenerating(true);
     try {
       // 1. Fetch current board data to send to AI
       const { data: columns } = await supabase.from('columns').select('*').eq('board_id', boardId);
       const { data: cards } = await supabase.from('cards').select('*, columns!inner(board_id)').eq('columns.board_id', boardId);
+
+      // C6: Guard against empty board — pointless to call Groq with no task data
+      if (!cards || cards.length === 0) {
+        toast({
+          title: 'No cards to analyze',
+          description: 'Add some tasks to your board before generating a retrospective.',
+          variant: 'warning',
+        });
+        setGenerating(false);
+        return;
+      }
 
       const payload = {
         columns: columns || [],
@@ -88,10 +111,27 @@ export const RetroModal = ({ boardId, onClose }: RetroModalProps) => {
 
       setRetros(prev => [newRetro, ...prev]);
       setSelectedRetro(newRetro);
-    } catch (error: any) {
-      alert('Error generating retro: ' + error.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      toast({ title: 'Error generating retro', description: message, variant: 'error' });
     } finally {
       setGenerating(false);
+    }
+  };
+
+  // M12: Delete a past retro
+  const handleDeleteRetro = async (e: React.MouseEvent, retroId: string) => {
+    e.stopPropagation();
+    setDeletingRetroId(retroId);
+    const { error } = await supabase.from('retros').delete().eq('id', retroId);
+    setDeletingRetroId(null);
+    if (error) {
+      toast({ title: 'Could not delete retro', description: error.message, variant: 'error' });
+    } else {
+      const remaining = retros.filter(r => r.id !== retroId);
+      setRetros(remaining);
+      if (selectedRetro?.id === retroId) setSelectedRetro(remaining[0] || null);
+      toast({ title: 'Retrospective deleted', variant: 'success' });
     }
   };
 
@@ -137,13 +177,27 @@ export const RetroModal = ({ boardId, onClose }: RetroModalProps) => {
             ) : (
               <div className="flex flex-col gap-2">
                 {retros.map(retro => (
-                  <button
-                    key={retro.id}
-                    onClick={() => setSelectedRetro(retro)}
-                    className={`text-left px-3 py-2 rounded-lg text-sm transition-colors ${selectedRetro?.id === retro.id ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium' : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/50'}`}
-                  >
-                    {new Date(retro.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                  </button>
+                  <div key={retro.id} className="group relative">
+                    <button
+                      onClick={() => setSelectedRetro(retro)}
+                      className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors pr-8 ${selectedRetro?.id === retro.id ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium' : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/50'}`}
+                    >
+                      {new Date(retro.created_at).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </button>
+                    {/* M12: Delete retro button */}
+                    <button
+                      onClick={(e) => handleDeleteRetro(e, retro.id)}
+                      disabled={deletingRetroId === retro.id}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
+                      aria-label="Delete retrospective"
+                    >
+                      {deletingRetroId === retro.id ? (
+                        <div className="w-3.5 h-3.5 border border-zinc-400 border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                      )}
+                    </button>
+                  </div>
                 ))}
               </div>
             )}
@@ -162,7 +216,7 @@ export const RetroModal = ({ boardId, onClose }: RetroModalProps) => {
             {generating ? (
               <div className="h-full flex flex-col items-center justify-center text-zinc-500 dark:text-zinc-400 space-y-4">
                 <div className="w-12 h-12 border-4 border-indigo-200 border-t-indigo-500 rounded-full animate-spin"></div>
-                <p className="font-medium animate-pulse">Gemini is analyzing your board...</p>
+                <p className="font-medium animate-pulse">Sensei is analyzing your board...</p>
               </div>
             ) : selectedRetro ? (
               <div className="prose prose-zinc dark:prose-invert max-w-3xl mx-auto prose-headings:font-bold prose-a:text-indigo-500">
