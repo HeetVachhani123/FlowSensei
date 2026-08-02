@@ -1,13 +1,13 @@
 // src/App.tsx
 import { BrowserRouter as Router, Route, Routes, Navigate, useLocation } from 'react-router-dom';
-import { AuthProvider } from './hooks/useAuth';
+import {  AuthProvider  } from './components/providers/AuthProvider';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
 import { Board } from './pages/Board';
 import { Navbar } from './components/Navbar';
-import { ToastProvider } from './components/toast';
-import { ThemeProvider } from './hooks/useTheme';
+import {  ToastProvider  } from './components/providers/ToastProvider';
+import {  ThemeProvider  } from './components/providers/ThemeProvider';
 
 // M16: Wrapper so Navbar can use useLocation (must be inside <Router>)
 const AppShell = () => {

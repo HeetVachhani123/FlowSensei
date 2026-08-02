@@ -1,8 +1,9 @@
 import { useEffect, useState, useMemo } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import type { CardType } from './Card';
-import { useToast } from '../toast';
+import {  useToast  } from '../../hooks/useToast';
 import { ConfirmDialog } from '../ConfirmDialog';
+import { LABEL_CONFIG, PREDEFINED_LABELS } from '../../lib/labelConfig';
 
 type CardModalProps = {
   card: CardType;
@@ -10,18 +11,6 @@ type CardModalProps = {
   onUpdate: (updatedCard: CardType) => void;
   onDelete: (id: string) => void;
 };
-
-// P3: Color-coded labels for at-a-glance scanning
-const LABEL_CONFIG: Record<string, { bg: string; text: string; activeBg: string; activeText: string; border: string; activeBorder: string }> = {
-  'Bug':          { bg: 'bg-red-50 dark:bg-red-900/20',     text: 'text-red-600 dark:text-red-400',     activeBg: 'bg-red-500',    activeText: 'text-white', border: 'border-red-200 dark:border-red-800',    activeBorder: 'border-red-500' },
-  'Feature':      { bg: 'bg-blue-50 dark:bg-blue-900/20',   text: 'text-blue-600 dark:text-blue-400',   activeBg: 'bg-blue-500',   activeText: 'text-white', border: 'border-blue-200 dark:border-blue-800',  activeBorder: 'border-blue-500' },
-  'Enhancement':  { bg: 'bg-cyan-50 dark:bg-cyan-900/20',   text: 'text-cyan-600 dark:text-cyan-400',   activeBg: 'bg-cyan-500',   activeText: 'text-white', border: 'border-cyan-200 dark:border-cyan-800',  activeBorder: 'border-cyan-500' },
-  'High Priority':{ bg: 'bg-orange-50 dark:bg-orange-900/20',text: 'text-orange-600 dark:text-orange-400',activeBg: 'bg-orange-500',activeText: 'text-white', border: 'border-orange-200 dark:border-orange-800',activeBorder: 'border-orange-500'},
-  'Design':       { bg: 'bg-purple-50 dark:bg-purple-900/20',text: 'text-purple-600 dark:text-purple-400',activeBg: 'bg-purple-500',activeText: 'text-white', border: 'border-purple-200 dark:border-purple-800',activeBorder: 'border-purple-500'},
-  'Backend':      { bg: 'bg-zinc-100 dark:bg-zinc-800/60',   text: 'text-zinc-600 dark:text-zinc-400',  activeBg: 'bg-zinc-700',   activeText: 'text-white', border: 'border-zinc-300 dark:border-zinc-700',   activeBorder: 'border-zinc-600' },
-  'Frontend':     { bg: 'bg-green-50 dark:bg-green-900/20',  text: 'text-green-600 dark:text-green-400', activeBg: 'bg-green-500',  activeText: 'text-white', border: 'border-green-200 dark:border-green-800', activeBorder: 'border-green-500' },
-};
-const PREDEFINED_LABELS = Object.keys(LABEL_CONFIG);
 
 export const CardModal = ({ card, onClose, onUpdate, onDelete }: CardModalProps) => {
   const [title, setTitle] = useState(card.title);
@@ -31,6 +20,7 @@ export const CardModal = ({ card, onClose, onUpdate, onDelete }: CardModalProps)
   const [saving, setSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);   // M20: separate delete state
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [isDiscardConfirmOpen, setIsDiscardConfirmOpen] = useState(false);
   const { toast } = useToast();
 
   // M4: Track unsaved changes
@@ -48,9 +38,10 @@ export const CardModal = ({ card, onClose, onUpdate, onDelete }: CardModalProps)
       // M4: Warn on Escape if there are unsaved changes
       if (e.key === 'Escape') {
         if (isDirty) {
-          if (!window.confirm('You have unsaved changes. Discard them?')) return;
+          setIsDiscardConfirmOpen(true);
+        } else {
+          onClose();
         }
-        onClose();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -60,9 +51,10 @@ export const CardModal = ({ card, onClose, onUpdate, onDelete }: CardModalProps)
   // M4: Intercept backdrop click too
   const handleBackdropClick = () => {
     if (isDirty) {
-      if (!window.confirm('You have unsaved changes. Discard them?')) return;
+      setIsDiscardConfirmOpen(true);
+    } else {
+      onClose();
     }
-    onClose();
   };
 
   const handleSave = async () => {
@@ -256,6 +248,18 @@ export const CardModal = ({ card, onClose, onUpdate, onDelete }: CardModalProps)
         isDestructive={true}
         onConfirm={performDelete}
         onCancel={() => setIsConfirmOpen(false)}
+      />
+
+      {/* M4: Discard unsaved changes confirmation */}
+      <ConfirmDialog
+        isOpen={isDiscardConfirmOpen}
+        title="Discard changes?"
+        message="You have unsaved changes. Are you sure you want to close without saving?"
+        confirmText="Discard"
+        cancelText="Keep editing"
+        isDestructive={true}
+        onConfirm={() => { setIsDiscardConfirmOpen(false); onClose(); }}
+        onCancel={() => setIsDiscardConfirmOpen(false)}
       />
     </div>
   );

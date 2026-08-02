@@ -1,4 +1,5 @@
 // src/components/Navbar.tsx
+import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../hooks/useTheme';
 import { useNavigate } from 'react-router-dom';
@@ -7,6 +8,18 @@ export const Navbar = () => {
   const { user, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   return (
     <nav className="fixed top-0 w-full z-50 bg-zinc-50/80 dark:bg-[#0c0c0d]/80 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800 transition-colors duration-300">
@@ -36,14 +49,30 @@ export const Navbar = () => {
               </svg>
             </button>
             {user && (
-              <div className="flex items-center gap-3">
-                <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">{user.email}</span>
+              <div className="relative" ref={dropdownRef}>
                 <button
-                  onClick={signOut}
-                  className="text-xs font-medium text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  className="flex items-center justify-center w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-400 text-xs font-bold ring-2 ring-transparent hover:ring-indigo-500/30 transition-all focus:outline-none"
+                  aria-label="User Menu"
                 >
-                  Log out
+                  {user.email?.charAt(0).toUpperCase() || 'U'}
                 </button>
+
+                {isDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-48 py-1 bg-white dark:bg-[#18181b] rounded-lg shadow-xl border border-zinc-200 dark:border-zinc-800 origin-top-right animate-in fade-in slide-in-from-top-2 z-50">
+                    <div className="px-4 py-3 border-b border-zinc-100 dark:border-zinc-800/50 mb-1">
+                      <p className="text-[11px] text-zinc-500 dark:text-zinc-400 font-medium uppercase tracking-wider mb-0.5">Signed in as</p>
+                      <p className="text-sm text-zinc-900 dark:text-zinc-100 font-semibold truncate" title={user.email}>{user.email}</p>
+                    </div>
+                    <button
+                      onClick={() => { setIsDropdownOpen(false); signOut(); navigate('/login'); }}
+                      className="w-full text-left px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors font-medium flex items-center gap-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                      Log out
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>

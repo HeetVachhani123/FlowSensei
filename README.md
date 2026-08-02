@@ -26,6 +26,21 @@ FlowSensei is a production-ready, full-stack project management tool designed fo
 * **AI Integration**: Supabase Edge Functions (Deno), Groq API (Llama 3), `react-markdown`
 * **Hosting**: Vercel
 
+## Project Structure (Highlights)
+```text
+src/
+  components/
+    providers/
+      AuthProvider.tsx
+      ThemeProvider.tsx
+      ToastProvider.tsx
+  hooks/
+    useAuth.ts
+    useTheme.ts
+    useToast.ts
+```
+*(Organized for strict React Fast Refresh compliance)*
+
 ## Technical Highlights
 
 ### ⚡ Live Multi-User Sync (Supabase Realtime)

@@ -1,34 +1,5 @@
-import { createContext, useContext, useState, type ReactNode } from 'react';
-
-type ToastVariant = 'default' | 'success' | 'error' | 'warning' | 'info';
-
-interface ToastOptions {
-  id?: string;
-  title: string;
-  description?: string;
-  variant?: ToastVariant;
-  duration?: number; // milliseconds
-}
-
-interface ToastItem extends ToastOptions {
-  id: string;
-  variant: ToastVariant;
-}
-
-interface ToastContextType {
-  toast: (options: ToastOptions) => void;
-  removeToast: (id: string) => void;
-}
-
-const ToastContext = createContext<ToastContextType | undefined>(undefined);
-
-export const useToast = () => {
-  const context = useContext(ToastContext);
-  if (!context) {
-    throw new Error('useToast must be used within a ToastProvider');
-  }
-  return context;
-};
+import { useState, useCallback, type ReactNode } from 'react';
+import { ToastContext, type ToastItem, type ToastOptions } from '../../hooks/useToast';
 
 interface ToastProviderProps {
   children: ReactNode;
@@ -37,8 +8,12 @@ interface ToastProviderProps {
 export const ToastProvider = ({ children }: ToastProviderProps) => {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
 
-  const toast = (options: ToastOptions) => {
-    const id = options.id || Math.random().toString(36).substr(2, 9);
+  const removeToast = useCallback((id: string) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  }, []);
+
+  const toast = useCallback((options: ToastOptions) => {
+    const id = options.id || crypto.randomUUID();
     const toastToAdd = {
       id,
       title: options.title,
@@ -51,11 +26,7 @@ export const ToastProvider = ({ children }: ToastProviderProps) => {
     setTimeout(() => {
       removeToast(id);
     }, toastToAdd.duration);
-  };
-
-  const removeToast = (id: string) => {
-    setToasts(prev => prev.filter(t => t.id !== id));
-  };
+  }, [removeToast]);
 
   return (
     <ToastContext.Provider value={{ toast, removeToast }}>

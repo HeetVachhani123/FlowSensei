@@ -34,7 +34,7 @@ serve(async (req) => {
       .map((c: any) => c.name)
       .join(' → ')
 
-    const prompt = `You are an expert Agile Coach and Scrum Master. Analyze the following Kanban board snapshot and generate a weekly retrospective.
+const prompt = `You are an expert Agile Coach and Scrum Master. Analyze the following Kanban board snapshot and generate a weekly retrospective.
 
 Board structure (left to right = workflow progression):
 ${columnOrder}
@@ -42,18 +42,18 @@ ${columnOrder}
 Cards (title → current column):
 ${cardSummaries}
 
-Please produce a Markdown retrospective with exactly three sections:
+Please produce a Markdown retrospective with exactly three sections. You MUST use '###' for headers and standard markdown bullet points ('- ').
 
-## What went well 👍
+### What went well 👍
 - Identify strengths, good flow patterns, and completed work. Reference specific card titles where possible.
 
-## What got stuck 🚧
+### What got stuck 🚧
 - Identify bottlenecks, blockers, and items that lingered too long in a column. Reference specific card titles where possible.
 
-## Actionable Suggestion for Next Week 💡
+### Actionable Suggestion for Next Week 💡
 - Give ONE specific, practical, and actionable improvement the team can implement immediately.
 
-Be concise and direct. Use Markdown formatting (headers, bullet points, bold text). Do not add introductory or concluding paragraphs beyond the sections above.`
+Be concise and direct. DO NOT output any introductory or concluding paragraphs. Your entire response must ONLY be the three Markdown headers and their corresponding bullet points.`
 
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',

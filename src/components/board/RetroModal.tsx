@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import ReactMarkdown from 'react-markdown';
-import { useToast } from '../toast';
+import {  useToast  } from '../../hooks/useToast';
 
 type Retro = {
   id: string;
@@ -24,17 +24,7 @@ export const RetroModal = ({ boardId, onClose }: RetroModalProps) => {
   const lastGenerateTime = React.useRef(0);  // S1: rate limiting
   const { toast } = useToast();
 
-  useEffect(() => {
-    fetchRetros();
-    
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
-
-  const fetchRetros = async () => {
+  const fetchRetros = useCallback(async () => {
     setLoading(true);
     const { data, error } = await supabase
       .from('retros')
@@ -47,7 +37,17 @@ export const RetroModal = ({ boardId, onClose }: RetroModalProps) => {
       if (data.length > 0) setSelectedRetro(data[0]);
     }
     setLoading(false);
-  };
+  }, [boardId]);
+
+  useEffect(() => {
+    fetchRetros();
+    
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [fetchRetros, onClose]);
 
   const handleGenerate = async () => {
     // S1: 5-second rate limit cooldown

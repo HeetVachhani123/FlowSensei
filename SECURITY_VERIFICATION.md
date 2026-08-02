@@ -155,3 +155,34 @@ CREATE POLICY "Users can delete retros of boards they own"
 - [ ] Step 5: `retros` DELETE policy exists
 - [ ] Edge Function `FRONTEND_URL` secret set to `https://flow-sensei-khaki.vercel.app` in Supabase Dashboard → Edge Functions → Secrets
 - [ ] `GROQ_API_KEY` secret is set in Supabase Edge Function secrets
+
+---
+
+## npm Vulnerability Triage (2026-08)
+
+`npm audit` currently reports **4 vulnerabilities** after running `npm audit fix`. Here is the full triage — each has been investigated and assessed for impact on FlowSensei's architecture:
+
+### 1. `react-router` 7.12.0–8.2.0 — HIGH (CSRF)
+- **CVE:** `GHSA-qwww-vcr4-c8h2` — RSC Mode CSRF Bypass
+- **Impact on FlowSensei:** ❌ **Not applicable.**
+  FlowSensei is a **pure client-side SPA** (no SSR, no React Server Components, no server actions). The CSRF bypass in this CVE requires RSC/server-action infrastructure to be exploitable. Our app has none of this — every route is rendered entirely in the browser.
+- **Why not downgraded:** Versions `< 7.12.0` carry 14 additional CVEs including XSS, open redirect, and RCE (all confirmed by `npm audit`). Downgrading trades one inapplicable CVE for multiple applicable ones.
+- **Status:** Accepted — not exploitable in this architecture. Will upgrade when a patch release is available.
+
+### 2. `esbuild` ≤ 0.24.2 — MODERATE (dev server request leak)
+- **CVE:** `GHSA-67mh-4wv8-2f99` — esbuild dev server allows cross-origin requests
+- **Impact on FlowSensei:** ❌ **Not applicable to production.**
+  This only affects the **Vite development server** (`npm run dev`). The production build (deployed on Vercel) does not use esbuild's dev server at all.
+- **Why not fixed:** The fix requires `npm audit fix --force`, which upgrades Vite to v8 — a **breaking change**. Not worth the instability risk for a dev-only vulnerability.
+- **Status:** Accepted — only exploitable if a malicious website is open in the same browser during local development. Not a production concern.
+
+### 3. `vite` ≤ 6.4.2 — (depends on esbuild above)
+- Same as above — dev-only, not a production concern.
+
+### Summary
+
+| Package | Severity | Production Impact | Action |
+|---------|----------|------------------|--------|
+| `react-router` | HIGH | None (requires RSC mode) | Accepted, monitor for patch |
+| `esbuild` | MODERATE | None (dev server only) | Accepted, upgrade when Vite v8 is stable |
+| `vite` | MODERATE | None (dev server only) | Accepted, upgrade with esbuild |

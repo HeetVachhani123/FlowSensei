@@ -1,5 +1,6 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { LABEL_CONFIG } from '../../lib/labelConfig';
 
 export type CardType = {
   id: string;
@@ -49,11 +50,22 @@ export const Card = ({ card, onClick }: CardProps) => {
     >
       {card.labels && card.labels.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mb-2">
-          {card.labels.map(label => (
-            <span key={label} className="px-1.5 py-0.5 text-[10px] font-semibold tracking-wide uppercase bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 rounded-md">
-              {label}
-            </span>
-          ))}
+          {card.labels.map(label => {
+            const cfg = LABEL_CONFIG[label];
+            return cfg ? (
+              <span
+                key={label}
+                className={`px-1.5 py-0.5 text-[10px] font-semibold tracking-wide uppercase rounded-md border ${cfg.activeBg} ${cfg.activeText} ${cfg.activeBorder}`}
+              >
+                {label}
+              </span>
+            ) : (
+              // Fallback for any unknown/custom label
+              <span key={label} className="px-1.5 py-0.5 text-[10px] font-semibold tracking-wide uppercase bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 rounded-md">
+                {label}
+              </span>
+            );
+          })}
         </div>
       )}
 

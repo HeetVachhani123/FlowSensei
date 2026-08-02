@@ -1,4 +1,5 @@
-import { useEffect, useState, useRef, Suspense, lazy } from 'react';
+import { useCallback, useEffect, useState, useRef, Suspense, lazy } from 'react';
+import { useAuth } from '../hooks/useAuth';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { Column } from '../components/board/Column';
@@ -6,7 +7,7 @@ import type { ColumnType } from '../components/board/Column';
 import type { CardType } from '../components/board/Card';
 import { CardModal } from '../components/board/CardModal';
 const RetroModal = lazy(() => import('../components/board/RetroModal').then(m => ({ default: m.RetroModal })));
-import { useToast } from '../components/toast';
+import {  useToast  } from '../hooks/useToast';
 import {
   DndContext,
   DragOverlay,
@@ -27,6 +28,7 @@ export const Board = () => {
   const { id: boardId } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
   const [board, setBoard] = useState<{ name: string } | null>(null);
   const [columns, setColumns] = useState<ColumnType[]>([]);
   const [cards, setCards] = useState<CardType[]>([]);
@@ -43,8 +45,16 @@ export const Board = () => {
   const [isRetroModalOpen, setIsRetroModalOpen] = useState(false);
   const { toast } = useToast();
 
+  // Derive user initial from email for the avatar
+  const userInitial = user?.email?.charAt(0).toUpperCase() ?? 'U';
+
+  // Capture URL search as a stable primitive for useCallback deps.
+  // Invite tokens arrive via ?invite=... and are consumed once on first load.
+  const locationSearch = location.search;
+
   const columnsRef = useRef<ColumnType[]>([]);
   const cardsRef = useRef<CardType[]>([]);
+  const initialCardsSnapshot = useRef<CardType[]>([]); // M10: True rollback state
 
   useEffect(() => {
     columnsRef.current = columns;
@@ -65,60 +75,12 @@ export const Board = () => {
     })
   );
 
-  useEffect(() => {
-    if (boardId) {
-      fetchBoardData();
-
-      // Real-time Sync with Supabase Subscriptions
-      const channel = supabase
-        .channel(`board-${boardId}`)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'cards' }, payload => {
-          const columnIds = columnsRef.current.map(c => c.id);
-
-          if (payload.eventType === 'INSERT') {
-            const newCard = payload.new as CardType;
-            if (!columnIds.includes(newCard.column_id)) return;
-            setCards(prev => {
-              if (prev.find(c => c.id === newCard.id)) return prev;
-              return [...prev, newCard];
-            });
-          } else if (payload.eventType === 'UPDATE') {
-            const updatedCard = payload.new as CardType;
-            if (!columnIds.includes(updatedCard.column_id)) return;
-            setCards(prev => prev.map(c => c.id === updatedCard.id ? updatedCard : c));
-          } else if (payload.eventType === 'DELETE') {
-            const oldCardId = payload.old.id;
-            const belongs = cardsRef.current.some(c => c.id === oldCardId);
-            if (!belongs) return;
-            setCards(prev => prev.filter(c => c.id !== oldCardId));
-          }
-        })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'columns', filter: `board_id=eq.${boardId}` }, payload => {
-          if (payload.eventType === 'INSERT') {
-            setColumns(prev => {
-              if (prev.find(c => c.id === payload.new.id)) return prev;
-              return [...prev, payload.new as ColumnType];
-            });
-          } else if (payload.eventType === 'UPDATE') {
-            setColumns(prev => prev.map(c => c.id === payload.new.id ? payload.new as ColumnType : c));
-          } else if (payload.eventType === 'DELETE') {
-            setColumns(prev => prev.filter(c => c.id !== payload.old.id));
-          }
-        })
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    }
-  }, [boardId]);
-
-  const fetchBoardData = async () => {
+  const fetchBoardData = useCallback(async () => {
     try {
       setLoading(true);
 
       // 1. Check for invite token
-      const searchParams = new URLSearchParams(location.search);
+      const searchParams = new URLSearchParams(locationSearch);
       const inviteToken = searchParams.get('invite');
       if (inviteToken) {
         const { error: joinError } = await supabase.rpc('join_board', {
@@ -172,7 +134,58 @@ export const Board = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [boardId, locationSearch, navigate, toast]);
+
+  // Effect 1: Fetch board data when boardId or invite token changes
+  useEffect(() => {
+    if (boardId) fetchBoardData();
+  }, [boardId, fetchBoardData]);
+
+  // Effect 2: Real-time Sync — independent subscription lifecycle
+  useEffect(() => {
+    if (!boardId) return;
+
+    const channel = supabase
+      .channel(`board-${boardId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'cards' }, payload => {
+        const columnIds = columnsRef.current.map(c => c.id);
+
+        if (payload.eventType === 'INSERT') {
+          const newCard = payload.new as CardType;
+          if (!columnIds.includes(newCard.column_id)) return;
+          setCards(prev => {
+            if (prev.find(c => c.id === newCard.id)) return prev;
+            return [...prev, newCard];
+          });
+        } else if (payload.eventType === 'UPDATE') {
+          const updatedCard = payload.new as CardType;
+          if (!columnIds.includes(updatedCard.column_id)) return;
+          setCards(prev => prev.map(c => c.id === updatedCard.id ? updatedCard : c));
+        } else if (payload.eventType === 'DELETE') {
+          const oldCardId = payload.old.id;
+          const belongs = cardsRef.current.some(c => c.id === oldCardId);
+          if (!belongs) return;
+          setCards(prev => prev.filter(c => c.id !== oldCardId));
+        }
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'columns', filter: `board_id=eq.${boardId}` }, payload => {
+        if (payload.eventType === 'INSERT') {
+          setColumns(prev => {
+            if (prev.find(c => c.id === payload.new.id)) return prev;
+            return [...prev, payload.new as ColumnType];
+          });
+        } else if (payload.eventType === 'UPDATE') {
+          setColumns(prev => prev.map(c => c.id === payload.new.id ? payload.new as ColumnType : c));
+        } else if (payload.eventType === 'DELETE') {
+          setColumns(prev => prev.filter(c => c.id !== payload.old.id));
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [boardId]);
 
   const handleAddColumn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -247,6 +260,7 @@ export const Board = () => {
   };
 
   const onDragStart = (event: DragStartEvent) => {
+    initialCardsSnapshot.current = cards; // M10: Snapshot before mutation
     const { active } = event;
     const card = cards.find(c => c.id === active.id);
     if (card) setActiveCard(card);
@@ -292,16 +306,27 @@ export const Board = () => {
   };
 
   const onDragEnd = async (event: DragEndEvent) => {
+    const originalCard = activeCard; // M10: Capture before clearing
     setActiveCard(null);
     const { active, over } = event;
-    if (!over) return;
+    
+    // M10: Revert optimistic updates if dropped outside
+    if (!over) {
+      setCards(initialCardsSnapshot.current);
+      return;
+    }
 
     const activeId = active.id as string;
     const activeCardData = cards.find(c => c.id === activeId);
-    if (!activeCardData) return;
+    
+    // M10: Glitch safety
+    if (!activeCardData || !originalCard) {
+      setCards(initialCardsSnapshot.current);
+      return;
+    }
 
-    // Determine source column (before drag) and target column (after drag)
-    const sourceColumnId = activeCardData.column_id;
+    // M10: Read source column from pre-drag state, not mutated state
+    const sourceColumnId = originalCard.column_id;
 
     let targetColumnId: string;
     const overCard = cards.find(c => c.id === over.id);
@@ -310,9 +335,6 @@ export const Board = () => {
     } else {
       targetColumnId = over.id as string; // dropped on a column
     }
-
-    // Cache previous state for rollback
-    const previousCards = [...cards];
 
     // Recompute positions within each affected column and persist them
     const recomputePositions = (allCards: CardType[], columnId: string) => {
@@ -349,7 +371,7 @@ export const Board = () => {
       const message = err instanceof Error ? err.message : String(err);
       console.error('Drag operation failed:', message);
       toast({ title: 'Move failed', description: message, variant: 'error' });
-      setCards(previousCards);
+      setCards(initialCardsSnapshot.current); // M10: Proper rollback
     }
   };
 
@@ -450,12 +472,15 @@ export const Board = () => {
         </div>
         
         <div className="flex items-center gap-4">
-          {/* P8: Collaborators placeholder */}
+          {/* Collaborator avatar — shows the logged-in user's initial */}
           <div className="hidden sm:flex items-center">
             <div className="flex -space-x-2">
-              <div className="w-7 h-7 rounded-full bg-blue-500 border-2 border-white dark:border-[#0c0c0d] flex items-center justify-center text-[10px] font-bold text-white z-30" title="You">You</div>
-              <div className="w-7 h-7 rounded-full bg-emerald-500 border-2 border-white dark:border-[#0c0c0d] flex items-center justify-center text-[10px] font-bold text-white z-20" title="Alice">A</div>
-              <div className="w-7 h-7 rounded-full bg-rose-500 border-2 border-white dark:border-[#0c0c0d] flex items-center justify-center text-[10px] font-bold text-white z-10" title="Bob">B</div>
+              <div
+                className="w-7 h-7 rounded-full bg-indigo-500 border-2 border-white dark:border-[#0c0c0d] flex items-center justify-center text-[10px] font-bold text-white"
+                title={user?.email ?? 'You'}
+              >
+                {userInitial}
+              </div>
             </div>
             <button 
               onClick={async () => {
@@ -518,6 +543,7 @@ export const Board = () => {
                   <input
                     type="text"
                     autoFocus
+                    aria-label="New column title"
                     value={newColumnName}
                     onChange={(e) => setNewColumnName(e.target.value)}
                     placeholder="Column title..."

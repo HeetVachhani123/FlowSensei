@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useNavigate } from 'react-router-dom';
-import { useToast } from '../components/toast';
+import {  useToast  } from '../hooks/useToast';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 
 type Board = {
@@ -157,6 +157,7 @@ export const Dashboard = () => {
         <form onSubmit={createBoard} className="flex flex-col sm:flex-row gap-3 items-start">
           <input
             type="text"
+            aria-label="New board name"
             value={newBoardName}
             onChange={(e) => setNewBoardName(e.target.value)}
             placeholder="New board name..."
@@ -180,6 +181,7 @@ export const Dashboard = () => {
             </svg>
             <input
               type="text"
+              aria-label="Search boards"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               placeholder="Search boards..."

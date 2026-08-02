@@ -3,7 +3,7 @@ import { Card } from './Card';
 import type { CardType } from './Card';
 import { useState, useRef, useEffect } from 'react';
 import { supabase } from '../../lib/supabaseClient';
-import { useToast } from '../toast';
+import {  useToast  } from '../../hooks/useToast';
 import { ConfirmDialog } from '../ConfirmDialog';
 
 export type ColumnType = {
@@ -102,6 +102,7 @@ export const Column = ({ column, cards, onAddCard, onCardClick, onDelete, onRena
           {isRenaming ? (
             <input
               ref={renameInputRef}
+              aria-label={`Rename column ${column.name}`}
               value={renameValue}
               onChange={e => setRenameValue(e.target.value)}
               onBlur={handleRenameSubmit}
@@ -155,6 +156,7 @@ export const Column = ({ column, cards, onAddCard, onCardClick, onDelete, onRena
           <form onSubmit={handleSubmit} className="flex flex-col gap-2">
             <textarea
               autoFocus
+              aria-label={`New card title in ${column.name}`}
               value={newCardTitle}
               onChange={(e) => setNewCardTitle(e.target.value)}
               onKeyDown={(e) => {
