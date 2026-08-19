@@ -12,7 +12,7 @@ FlowSensei is a production-ready, full-stack project management tool designed fo
 
 ## Key Features
 - **Real-Time Collaboration**: See cards move and update instantly across all connected clients.
-- **AI Retrospectives**: Generate comprehensive Markdown reports of your board's status, bottlenecks, and action items using Llama 3 via the Groq API.
+- **AI Retrospectives**: Generate comprehensive Markdown reports of your board's status, bottlenecks, and action items using GPT-OSS 120B via the Groq API.
 - **Drag-and-Drop Interface**: Smooth, accessible column and card reordering using `@dnd-kit`.
 - **Optimistic UI Updates**: Instant frontend state updates that mask network latency for a buttery-smooth user experience.
 - **Secure Board Management**: Create multiple boards, with Row-Level Security (RLS) ensuring you only access data you own or are a member of.

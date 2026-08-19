@@ -17,9 +17,10 @@ export type CardType = {
 type CardProps = {
   card: CardType;
   onClick: (card: CardType) => void;
+  isStuck?: boolean;
 };
 
-export const Card = ({ card, onClick }: CardProps) => {
+export const Card = ({ card, onClick, isStuck }: CardProps) => {
   const { setNodeRef, attributes, listeners, transform, transition, isDragging } = useSortable({
     id: card.id,
     data: {
@@ -46,6 +47,7 @@ export const Card = ({ card, onClick }: CardProps) => {
         bg-white dark:bg-[#18181b] p-3 rounded-lg border border-zinc-200 dark:border-zinc-800/80
         mb-2 cursor-pointer active:cursor-grabbing hover:border-zinc-300 dark:hover:border-zinc-600 transition-all
         ${isDragging ? 'opacity-50 ring-1 ring-zinc-400 dark:ring-zinc-600 shadow-xl' : ''}
+        ${isStuck ? 'border-l-4 border-l-amber-500 dark:border-l-amber-500' : ''}
       `}
     >
       {card.labels && card.labels.length > 0 && (
@@ -71,24 +73,39 @@ export const Card = ({ card, onClick }: CardProps) => {
 
       <div className="font-medium text-sm text-zinc-800 dark:text-zinc-200 leading-snug">{card.title}</div>
       
-      {(card.description || card.due_date) && (
-        <div className="mt-2.5 flex items-center gap-3 text-zinc-400 dark:text-zinc-500">
-          {card.description && (
-            <div className="flex items-center gap-1" title="Has description">
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h7"></path></svg>
-            </div>
-          )}
-          {card.due_date && (
+      {(card.description || card.due_date || isStuck) && (
+        <div className="mt-2.5 flex items-center justify-between gap-2 text-zinc-400 dark:text-zinc-500">
+          <div className="flex items-center gap-3">
+            {card.description && (
+              <div className="flex items-center gap-1" title="Has description">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h7"></path></svg>
+              </div>
+            )}
+            {card.due_date && (
+              <div 
+                className={`flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-full ${
+                  isOverdue 
+                    ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' 
+                    : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400'
+                }`} 
+                title={isOverdue ? 'Overdue' : 'Due date'}
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                {new Date(card.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+              </div>
+            )}
+          </div>
+
+          {isStuck && (
             <div 
-              className={`flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-full ${
-                isOverdue 
-                  ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' 
-                  : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400'
-              }`} 
-              title={isOverdue ? 'Overdue' : 'Due date'}
+              className="flex items-center gap-1.5 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 dark:border dark:border-amber-800/60 ml-auto flex-shrink-0 cursor-help"
+              title="stuck longer than usual"
             >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-              {new Date(card.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500"></span>
+              </span>
+              <span>Stuck</span>
             </div>
           )}
         </div>

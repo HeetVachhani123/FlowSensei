@@ -1,7 +1,7 @@
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { Card } from './Card';
 import type { CardType } from './Card';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import {  useToast  } from '../../hooks/useToast';
 import { ConfirmDialog } from '../ConfirmDialog';
@@ -27,6 +27,7 @@ export const Column = ({ column, cards, onAddCard, onCardClick, onDelete, onRena
   const [isAdding, setIsAdding] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
   
   // M6: Column inline rename
   const [isRenaming, setIsRenaming] = useState(false);
@@ -37,6 +38,41 @@ export const Column = ({ column, cards, onAddCard, onCardClick, onDelete, onRena
   useEffect(() => {
     if (isRenaming) renameInputRef.current?.select();
   }, [isRenaming]);
+
+  // Dynamic timer to keep time-in-column calculations reactive
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNow(Date.now());
+    }, 30000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Bottleneck Heuristic:
+  // For this column, compute the dwell time of each card (from updated_at or created_at).
+  // If a card has been in the column longer than 1.5x the column's average time, flag it.
+  const stuckCardIds = useMemo(() => {
+    if (cards.length < 2) return new Set<string>();
+
+    const durations = cards.map(c => {
+      const timestamp = c.updated_at || c.created_at;
+      const timeMs = timestamp ? new Date(timestamp).getTime() : now;
+      return Math.max(0, now - timeMs);
+    });
+
+    const totalDuration = durations.reduce((sum, d) => sum + d, 0);
+    const avgDuration = totalDuration / cards.length;
+
+    if (avgDuration <= 0) return new Set<string>();
+
+    const stuckSet = new Set<string>();
+    cards.forEach((card, idx) => {
+      if (durations[idx] > 1.5 * avgDuration) {
+        stuckSet.add(card.id);
+      }
+    });
+
+    return stuckSet;
+  }, [cards, now]);
 
   const { setNodeRef } = useSortable({
     id: column.id,
@@ -146,7 +182,12 @@ export const Column = ({ column, cards, onAddCard, onCardClick, onDelete, onRena
       <div className="flex-1 overflow-y-auto min-h-[150px] custom-scrollbar pr-1">
         <SortableContext items={cards.map(c => c.id)} strategy={verticalListSortingStrategy}>
           {cards.map(card => (
-            <Card key={card.id} card={card} onClick={onCardClick} />
+            <Card 
+              key={card.id} 
+              card={card} 
+              onClick={onCardClick} 
+              isStuck={stuckCardIds.has(card.id)} 
+            />
           ))}
         </SortableContext>
       </div>

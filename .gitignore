@@ -37,3 +37,7 @@ pnpm-debug.log*
 
 # Vite
 .vite
+
+# Supabase
+.temp/
+supabase/.temp/
