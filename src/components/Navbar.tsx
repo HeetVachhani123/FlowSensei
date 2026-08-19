@@ -26,7 +26,7 @@ export const Navbar = () => {
     <nav className="fixed top-0 w-full z-50 bg-zinc-50/80 dark:bg-[#0c0c0d]/80 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800 transition-colors duration-300">
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-[52px]">
-          <div className="flex-shrink-0 flex items-center gap-2.5 cursor-pointer" onClick={() => navigate('/', { replace: true })}>
+          <div className="flex-shrink-0 flex items-center gap-2.5 cursor-pointer" onClick={() => navigate(user ? '/dashboard' : '/', { replace: true })}>
             <div className="w-6 h-6 rounded bg-zinc-900 dark:bg-zinc-100 flex items-center justify-center text-white dark:text-zinc-900 font-bold text-sm">
               F
             </div>

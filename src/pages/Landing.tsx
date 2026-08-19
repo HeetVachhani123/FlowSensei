@@ -1,7 +1,7 @@
-// src/pages/Landing.tsx
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { TeammateCursor } from '../components/TeammateCursor';
 
 export const Landing = () => {
   const navigate = useNavigate();
@@ -77,7 +77,7 @@ export const Landing = () => {
                     : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/50'
                 }`}
               >
-                ⚡ Live Kanban &amp; Bottlenecks
+                Live Kanban &amp; Bottlenecks
               </button>
               <button
                 onClick={() => setActiveTab('retro')}
@@ -87,7 +87,7 @@ export const Landing = () => {
                     : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/50'
                 }`}
               >
-                🧠 AI Retrospectives
+                AI Retrospectives
               </button>
               <button
                 onClick={() => setActiveTab('dashboard')}
@@ -97,7 +97,7 @@ export const Landing = () => {
                     : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/50'
                 }`}
               >
-                📂 Projects Dashboard
+                Projects Dashboard
               </button>
             </div>
 
@@ -105,6 +105,18 @@ export const Landing = () => {
             <div className="relative rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-900 shadow-inner">
               {activeTab === 'board' && (
                 <div className="relative w-full aspect-[16/9] max-h-[520px] overflow-hidden flex items-center justify-center">
+                  {/* Live Multiplayer Teammate Cursors */}
+                  <TeammateCursor
+                    name="Tanay"
+                    color="#6366f1"
+                    className="animate-cursor-1 top-0 left-0"
+                  />
+                  <TeammateCursor
+                    name="Kamil"
+                    color="#10b981"
+                    className="animate-cursor-2 top-0 left-0"
+                  />
+
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400" className="w-full h-full object-contain">
                     <defs>
                       <linearGradient id="landing-bg2" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -117,13 +129,13 @@ export const Landing = () => {
                     <rect x="0" y="0" width="800" height="40" fill="#0c0c0d" stroke="#27272a" />
                     <text x="40" y="26" fontFamily="Segoe UI,Roboto,sans-serif" fontSize="14" fontWeight="700" fill="#fafafa">Sprint 14 — Onboarding</text>
                     <rect x="680" y="10" width="92" height="22" rx="6" fill="#4f46e5" />
-                    <text x="702" y="26" fontFamily="Segoe UI,Roboto,sans-serif" fontSize="11" fontWeight="600" fill="#fafafa">⚡ AI Retro</text>
+                    <text x="702" y="26" fontFamily="Segoe UI,Roboto,sans-serif" fontSize="11" fontWeight="600" fill="#fafafa">AI Retro</text>
                     
                     {/* Column 1: Backlog */}
                     <g transform="translate(40,65)">
                       <rect width="160" height="310" rx="10" fill="#121214" stroke="#27272a" />
-                      <rect x="12" y="12" width="100" height="10" rx="3" fill="#3f3f46" />
-                      <text x="140" y="22" fontFamily="Segoe UI,Roboto,sans-serif" fontSize="10" fill="#a1a1aa">3</text>
+                      <text x="14" y="24" fontFamily="Segoe UI,Roboto,sans-serif" fontSize="12" fontWeight="700" fill="#e4e4e7">Backlog</text>
+                      <text x="140" y="24" fontFamily="Segoe UI,Roboto,sans-serif" fontSize="10" fontWeight="600" fill="#a1a1aa">3</text>
                       
                       {/* Card 1 */}
                       <rect x="10" y="36" width="140" height="52" rx="8" fill="#18181b" stroke="#3f3f46" />
@@ -143,8 +155,8 @@ export const Landing = () => {
                     {/* Column 2: In Progress (Bottleneck demonstration) */}
                     <g transform="translate(220,65)">
                       <rect width="160" height="310" rx="10" fill="#121214" stroke="#27272a" />
-                      <rect x="12" y="12" width="100" height="10" rx="3" fill="#3f3f46" />
-                      <text x="140" y="22" fontFamily="Segoe UI,Roboto,sans-serif" fontSize="10" fill="#a1a1aa">2</text>
+                      <text x="14" y="24" fontFamily="Segoe UI,Roboto,sans-serif" fontSize="12" fontWeight="700" fill="#e4e4e7">In Progress</text>
+                      <text x="140" y="24" fontFamily="Segoe UI,Roboto,sans-serif" fontSize="10" fontWeight="600" fill="#a1a1aa">2</text>
                       
                       {/* Card with Bottleneck Indicator */}
                       <rect x="10" y="36" width="140" height="60" rx="8" fill="#18181b" stroke="#f59e0b" strokeWidth="1.5" />
@@ -162,8 +174,8 @@ export const Landing = () => {
                     {/* Column 3: Review */}
                     <g transform="translate(400,65)">
                       <rect width="160" height="310" rx="10" fill="#121214" stroke="#27272a" />
-                      <rect x="12" y="12" width="100" height="10" rx="3" fill="#3f3f46" />
-                      <text x="140" y="22" fontFamily="Segoe UI,Roboto,sans-serif" fontSize="10" fill="#a1a1aa">1</text>
+                      <text x="14" y="24" fontFamily="Segoe UI,Roboto,sans-serif" fontSize="12" fontWeight="700" fill="#e4e4e7">Review</text>
+                      <text x="140" y="24" fontFamily="Segoe UI,Roboto,sans-serif" fontSize="10" fontWeight="600" fill="#a1a1aa">1</text>
                       <rect x="10" y="36" width="140" height="52" rx="8" fill="#18181b" stroke="#6366f1" />
                       <rect x="18" y="46" width="32" height="8" rx="2" fill="#6366f1" />
                       <text x="18" y="74" fontFamily="Segoe UI,Roboto,sans-serif" fontSize="11" fill="#e4e4e7">AI retro generator</text>
@@ -172,8 +184,8 @@ export const Landing = () => {
                     {/* Column 4: Done */}
                     <g transform="translate(580,65)">
                       <rect width="160" height="310" rx="10" fill="#121214" stroke="#27272a" />
-                      <rect x="12" y="12" width="100" height="10" rx="3" fill="#3f3f46" />
-                      <text x="140" y="22" fontFamily="Segoe UI,Roboto,sans-serif" fontSize="10" fill="#a1a1aa">2</text>
+                      <text x="14" y="24" fontFamily="Segoe UI,Roboto,sans-serif" fontSize="12" fontWeight="700" fill="#e4e4e7">Done</text>
+                      <text x="140" y="24" fontFamily="Segoe UI,Roboto,sans-serif" fontSize="10" fontWeight="600" fill="#a1a1aa">2</text>
                       <rect x="10" y="36" width="140" height="52" rx="8" fill="#18181b" stroke="#10b98180" />
                       <text x="18" y="68" fontFamily="Segoe UI,Roboto,sans-serif" fontSize="11" fill="#e4e4e7">Add dark mode toggle</text>
                       <rect x="10" y="96" width="140" height="52" rx="8" fill="#18181b" stroke="#10b98180" />
@@ -195,7 +207,7 @@ export const Landing = () => {
                     <rect width="800" height="400" fill="url(#landing-bg3)" />
                     {/* Left panel */}
                     <rect x="20" y="20" width="180" height="360" rx="10" fill="#121214" stroke="#3f3f46" />
-                    <text x="40" y="50" fontFamily="Segoe UI,Roboto,sans-serif" fontSize="13" fontWeight="700" fill="#fafafa">⚡ AI Retrospectives</text>
+                    <text x="40" y="50" fontFamily="Segoe UI,Roboto,sans-serif" fontSize="13" fontWeight="700" fill="#fafafa">AI Retrospectives</text>
                     <rect x="30" y="76" width="160" height="36" rx="6" fill="#4f46e5" />
                     <text x="58" y="100" fontFamily="Segoe UI,Roboto,sans-serif" fontSize="12" fontWeight="600" fill="#fafafa">+ Generate Retro</text>
                     <rect x="30" y="136" width="160" height="28" rx="6" fill="#312e81" />
@@ -205,24 +217,23 @@ export const Landing = () => {
                     
                     {/* Right report panel */}
                     <rect x="220" y="20" width="560" height="360" rx="10" fill="#121214" stroke="#3f3f46" />
-                    <circle cx="750" cy="40" r="12" fill="#3f3f46" />
+                    <circle cx="755" cy="38" r="10" fill="#27272a" />
+                    <text x="755" y="42" textAnchor="middle" fontFamily="sans-serif" fontSize="12" fill="#a1a1aa">✕</text>
                     <text x="250" y="64" fontFamily="Segoe UI,Roboto,sans-serif" fontSize="18" fontWeight="800" fill="#fafafa">Sprint 14 — Retrospective</text>
-                    <text x="250" y="100" fontFamily="Segoe UI,Roboto,sans-serif" fontSize="14" fontWeight="700" fill="#fafafa">👍 What went well</text>
+                    <text x="250" y="100" fontFamily="Segoe UI,Roboto,sans-serif" fontSize="14" fontWeight="700" fill="#fafafa">What went well</text>
                     <text x="260" y="122" fontFamily="Segoe UI,Roboto,sans-serif" fontSize="11" fill="#d4d4d8">• Dark mode shipped ahead of schedule</text>
                     <text x="260" y="142" fontFamily="Segoe UI,Roboto,sans-serif" fontSize="11" fill="#d4d4d8">• "Add card" dropped to 320ms P95</text>
                     
-                    <text x="250" y="176" fontFamily="Segoe UI,Roboto,sans-serif" fontSize="14" fontWeight="700" fill="#fafafa">🚧 What got stuck</text>
+                    <text x="250" y="176" fontFamily="Segoe UI,Roboto,sans-serif" fontSize="14" fontWeight="700" fill="#fafafa">What got stuck</text>
                     <text x="260" y="198" fontFamily="Segoe UI,Roboto,sans-serif" fontSize="11" fill="#fca5a5">• *"Design sign-up flow"* — lingering in To Do</text>
                     <text x="260" y="218" fontFamily="Segoe UI,Roboto,sans-serif" fontSize="11" fill="#fca5a5">• In Progress column bottleneck detected</text>
                     
-                    <text x="250" y="252" fontFamily="Segoe UI,Roboto,sans-serif" fontSize="14" fontWeight="700" fill="#fafafa">💡 Suggestion for next week</text>
+                    <text x="250" y="252" fontFamily="Segoe UI,Roboto,sans-serif" fontSize="14" fontWeight="700" fill="#fafafa">Suggestion for next week</text>
                     <rect x="250" y="266" width="500" height="64" rx="8" fill="#312e8150" stroke="#6366f1" />
                     <text x="266" y="294" fontFamily="Segoe UI,Roboto,sans-serif" fontSize="11" fill="#e0e7ff">
                       <tspan x="266" dy="0">Set a WIP limit of 2 on In Progress and pair-design</tspan>
                       <tspan x="266" dy="14">the sign-up flow with the backend owner.</tspan>
                     </text>
-                    <circle cx="740" cy="330" r="22" fill="#312e81" opacity="0.8" />
-                    <text x="740" y="342" textAnchor="middle" fontFamily="serif" fontSize="24" fill="#fafafa">禅</text>
                   </svg>
                 </div>
               )}
@@ -237,11 +248,14 @@ export const Landing = () => {
                       </linearGradient>
                     </defs>
                     <rect width="800" height="400" fill="url(#landing-bg)" />
+                    {/* Top navbar */}
                     <rect x="0" y="0" width="800" height="40" fill="#0c0c0d" stroke="#27272a" />
-                    <circle cx="28" cy="20" r="9" fill="#18181b" stroke="#3f3f46" />
-                    <text x="44" y="26" fontFamily="Segoe UI,Roboto,sans-serif" fontSize="14" fontWeight="700" fill="#fafafa">F</text>
-                    <text x="66" y="26" fontFamily="Segoe UI,Roboto,sans-serif" fontSize="12" fontWeight="600" fill="#e4e4e7">FlowSensei</text>
-                    <circle cx="772" cy="20" r="7" fill="#3f3f46" />
+                    <rect x="20" y="10" width="20" height="20" rx="4" fill="#6366f1" />
+                    <text x="30" y="24" fontFamily="Segoe UI,Roboto,sans-serif" fontSize="12" fontWeight="800" fill="#ffffff" textAnchor="middle">F</text>
+                    <text x="48" y="25" fontFamily="Segoe UI,Roboto,sans-serif" fontSize="13" fontWeight="600" fill="#e4e4e7">FlowSensei</text>
+                    
+                    <circle cx="770" cy="20" r="10" fill="#6366f1" />
+                    <text x="770" y="24" fontFamily="Segoe UI,Roboto,sans-serif" fontSize="10" fontWeight="700" fill="#ffffff" textAnchor="middle">A</text>
                     
                     <text x="100" y="86" fontFamily="Segoe UI,Roboto,sans-serif" fontSize="22" fontWeight="700" fill="#fafafa">Projects</text>
                     <text x="100" y="108" fontFamily="Segoe UI,Roboto,sans-serif" fontSize="12" fill="#a1a1aa">Manage your boards and workflows.</text>
@@ -406,9 +420,15 @@ export const Landing = () => {
             <a href="https://github.com/HeetVachhani123/FlowSensei" target="_blank" rel="noreferrer" className="hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors">
               GitHub
             </a>
-            <button onClick={() => navigate('/login')} className="hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors">
-              Sign in
-            </button>
+            {user ? (
+              <button onClick={() => navigate('/dashboard')} className="hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors">
+                Dashboard
+              </button>
+            ) : (
+              <button onClick={() => navigate('/login')} className="hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors">
+                Sign in
+              </button>
+            )}
           </div>
         </div>
       </footer>

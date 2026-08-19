@@ -6,6 +6,7 @@ import { Column } from '../components/board/Column';
 import type { ColumnType } from '../components/board/Column';
 import type { CardType } from '../components/board/Card';
 import { CardModal } from '../components/board/CardModal';
+import { TeammateCursor } from '../components/TeammateCursor';
 const RetroModal = lazy(() => import('../components/board/RetroModal').then(m => ({ default: m.RetroModal })));
 import {  useToast  } from '../hooks/useToast';
 import {
@@ -56,6 +57,26 @@ export const Board = () => {
   const cardsRef = useRef<CardType[]>([]);
   const initialCardsSnapshot = useRef<CardType[]>([]); // M10: True rollback state
 
+  // Multiplayer Live Cursors
+  interface RemoteCursor {
+    name: string;
+    color: string;
+    x: number;
+    y: number;
+    lastSeen: number;
+  }
+  const [remoteCursors, setRemoteCursors] = useState<Record<string, RemoteCursor>>({});
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const lastBroadcastTime = useRef<number>(0);
+  const boardContainerRef = useRef<HTMLDivElement>(null);
+
+  const CURSOR_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ec4899', '#06b6d4', '#8b5cf6', '#14b8a6'];
+  const getUserColor = (id: string) => {
+    let hash = 0;
+    for (let i = 0; i < id.length; i++) hash = id.charCodeAt(i) + ((hash << 5) - hash);
+    return CURSOR_COLORS[Math.abs(hash) % CURSOR_COLORS.length];
+  };
+
   useEffect(() => {
     columnsRef.current = columns;
   }, [columns]);
@@ -92,9 +113,17 @@ export const Board = () => {
         window.history.replaceState({}, '', `/board/${boardId}`);
         
         if (joinError) {
-          toast({ title: 'Invalid invite', description: joinError.message, variant: 'error' });
+          toast({
+            title: 'Invite Error',
+            description: joinError.message,
+            variant: 'error'
+          });
         } else {
-          toast({ title: 'Joined board!', description: 'You have been added as a member.', variant: 'success' });
+          toast({
+            title: 'Joined Board',
+            description: 'You now have access to this board.',
+            variant: 'success'
+          });
         }
       }
 
@@ -105,32 +134,43 @@ export const Board = () => {
         .eq('id', boardId)
         .single();
 
-      // C4: Board not found or no access → redirect to dashboard
-      if (boardError || !boardData) {
-        toast({ title: 'Board not found', description: 'This board does not exist or you do not have access.', variant: 'error' });
-        navigate('/dashboard', { replace: true });
-        return;
-      }
+      if (boardError) throw boardError;
       setBoard(boardData);
+      setTitleValue(boardData?.name || '');
 
-      const { data: colsData } = await supabase.from('columns').select('*').eq('board_id', boardId).order('position');
-      if (colsData) setColumns(colsData);
+      // 3. Fetch Columns
+      const { data: columnData, error: columnError } = await supabase
+        .from('columns')
+        .select('*')
+        .eq('board_id', boardId)
+        .order('position');
 
-      if (colsData && colsData.length > 0) {
-        const { data: cardsData } = await supabase.from('cards')
+      if (columnError) throw columnError;
+      setColumns(columnData || []);
+
+      // 4. Fetch Cards
+      if (columnData && columnData.length > 0) {
+        const columnIds = columnData.map(c => c.id);
+        const { data: cardData, error: cardError } = await supabase
+          .from('cards')
           .select('*')
-          .in('column_id', colsData.map(c => c.id))
+          .in('column_id', columnIds)
           .order('position');
-        if (cardsData) setCards(cardsData);
+
+        if (cardError) throw cardError;
+        setCards(cardData || []);
       } else {
         setCards([]);
       }
 
-    } catch (error) {
-      // C7: Show error to the user, not just the console
-      const message = error instanceof Error ? error.message : 'Failed to load board data';
-      console.error('Error fetching board data:', error);
-      toast({ title: 'Failed to load board', description: message, variant: 'error' });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      toast({
+        title: 'Error loading board',
+        description: message,
+        variant: 'error',
+      });
+      navigate('/dashboard');
     } finally {
       setLoading(false);
     }
@@ -141,7 +181,7 @@ export const Board = () => {
     if (boardId) fetchBoardData();
   }, [boardId, fetchBoardData]);
 
-  // Effect 2: Real-time Sync — independent subscription lifecycle
+  // Effect 2: Real-time Sync & Multiplayer Live Cursors
   useEffect(() => {
     if (!boardId) return;
 
@@ -180,12 +220,86 @@ export const Board = () => {
           setColumns(prev => prev.filter(c => c.id !== payload.old.id));
         }
       })
+      .on('broadcast', { event: 'cursor-pos' }, ({ payload }) => {
+        if (!payload || !payload.userId || payload.userId === user?.id) return;
+        setRemoteCursors(prev => ({
+          ...prev,
+          [payload.userId]: {
+            name: payload.name,
+            color: payload.color,
+            x: payload.x,
+            y: payload.y,
+            lastSeen: Date.now(),
+          },
+        }));
+      })
+      .on('broadcast', { event: 'cursor-leave' }, ({ payload }) => {
+        if (!payload || !payload.userId) return;
+        setRemoteCursors(prev => {
+          const next = { ...prev };
+          delete next[payload.userId];
+          return next;
+        });
+      })
       .subscribe();
 
+    channelRef.current = channel;
+
+    // Prune stale cursors every 2 seconds
+    const interval = setInterval(() => {
+      const now = Date.now();
+      setRemoteCursors(prev => {
+        let changed = false;
+        const next: Record<string, RemoteCursor> = {};
+        for (const [id, cur] of Object.entries(prev)) {
+          if (now - cur.lastSeen < 4000) {
+            next[id] = cur;
+          } else {
+            changed = true;
+          }
+        }
+        return changed ? next : prev;
+      });
+    }, 2000);
+
     return () => {
+      clearInterval(interval);
       supabase.removeChannel(channel);
+      channelRef.current = null;
     };
-  }, [boardId]);
+  }, [boardId, user?.id]);
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!boardContainerRef.current || !channelRef.current || !user) return;
+    const now = performance.now();
+    if (now - lastBroadcastTime.current < 45) return;
+    lastBroadcastTime.current = now;
+
+    const rect = boardContainerRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left + boardContainerRef.current.scrollLeft;
+    const y = e.clientY - rect.top + boardContainerRef.current.scrollTop;
+
+    channelRef.current.send({
+      type: 'broadcast',
+      event: 'cursor-pos',
+      payload: {
+        userId: user.id,
+        name: user.email?.split('@')[0] || 'Teammate',
+        color: getUserColor(user.id),
+        x,
+        y,
+      },
+    });
+  };
+
+  const handlePointerLeave = () => {
+    if (!channelRef.current || !user) return;
+    channelRef.current.send({
+      type: 'broadcast',
+      event: 'cursor-leave',
+      payload: { userId: user.id },
+    });
+  };
 
   const handleAddColumn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -515,7 +629,25 @@ export const Board = () => {
         </div>
       </div>
       
-      <div className="flex-1 overflow-x-auto p-6 custom-scrollbar">
+      <div 
+        ref={boardContainerRef}
+        onPointerMove={handlePointerMove}
+        onPointerLeave={handlePointerLeave}
+        className="flex-1 overflow-x-auto p-6 custom-scrollbar relative"
+      >
+        {/* Live Multiplayer Teammate Cursors */}
+        {Object.entries(remoteCursors).map(([peerId, cursor]) => (
+          <TeammateCursor
+            key={peerId}
+            name={cursor.name}
+            color={cursor.color}
+            style={{
+              transform: `translate3d(${cursor.x}px, ${cursor.y}px, 0)`,
+              transition: 'transform 80ms ease-out',
+            }}
+          />
+        ))}
+
         <DndContext
           sensors={sensors}
           collisionDetection={closestCorners}

@@ -157,3 +157,48 @@ body {
 .skeleton-wave {
   animation: skeleton-wave 1.6s ease-in-out infinite;
 }
+
+/* Multiplayer Cursor Animations for Showcase */
+@keyframes cursor-wander-1 {
+  0% {
+    transform: translate(110px, 120px);
+  }
+  25% {
+    transform: translate(250px, 95px);
+  }
+  50% {
+    transform: translate(290px, 150px);
+  }
+  75% {
+    transform: translate(170px, 175px);
+  }
+  100% {
+    transform: translate(110px, 120px);
+  }
+}
+
+@keyframes cursor-wander-2 {
+  0% {
+    transform: translate(520px, 210px);
+  }
+  30% {
+    transform: translate(660px, 35px);
+  }
+  60% {
+    transform: translate(440px, 110px);
+  }
+  85% {
+    transform: translate(580px, 140px);
+  }
+  100% {
+    transform: translate(520px, 210px);
+  }
+}
+
+.animate-cursor-1 {
+  animation: cursor-wander-1 12s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+}
+
+.animate-cursor-2 {
+  animation: cursor-wander-2 15s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+}

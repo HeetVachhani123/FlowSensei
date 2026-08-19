@@ -1,13 +1,18 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': Deno.env.get('FRONTEND_URL') || 'https://flow-sensei-khaki.vercel.app',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Max-Age': '300',
+const getCorsHeaders = (req: Request) => {
+  const origin = req.headers.get('Origin') || '*'
+  return {
+    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Max-Age': '300',
+  }
 }
 
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req)
+
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -44,13 +49,13 @@ ${cardSummaries}
 
 Please produce a Markdown retrospective with exactly three sections. You MUST use '###' for headers and standard markdown bullet points ('- ').
 
-### What went well 👍
+### What went well
 - Identify strengths, good flow patterns, and completed work. Reference specific card titles where possible.
 
-### What got stuck 🚧
+### What got stuck
 - Identify bottlenecks, blockers, and items that lingered too long in a column. Reference specific card titles where possible.
 
-### Actionable Suggestion for Next Week 💡
+### Actionable Suggestion for Next Week
 - Give ONE specific, practical, and actionable improvement the team can implement immediately.
 
 Be concise and direct. DO NOT output any introductory or concluding paragraphs. Your entire response must ONLY be the three Markdown headers and their corresponding bullet points.`
