@@ -148,7 +148,7 @@ export const CardModal = ({ card, onClose, onUpdate, onDelete }: CardModalProps)
           </div>
           <button
             onClick={handleBackdropClick}
-            className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors p-1 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800"
+            className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800"
             aria-label="Close modal"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -222,21 +222,21 @@ export const CardModal = ({ card, onClose, onUpdate, onDelete }: CardModalProps)
           <button
             onClick={() => setIsConfirmOpen(true)}
             disabled={isDeleting}
-            className="px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors disabled:opacity-50"
+            className="px-4 py-2 min-h-[40px] text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors disabled:opacity-50 flex items-center"
           >
             {isDeleting ? 'Deleting...' : 'Delete Card'}
           </button>
           <div className="flex gap-3">
             <button
               onClick={handleBackdropClick}
-              className="px-4 py-2 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+              className="px-4 py-2 min-h-[40px] text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 rounded-lg transition-colors flex items-center"
             >
               Cancel
             </button>
             <button
               onClick={handleSave}
               disabled={saving || !isDirty}
-              className="px-4 py-2 bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white text-sm font-medium rounded-md transition-all disabled:opacity-40 shadow-sm"
+              className="px-4 py-2 min-h-[40px] bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white text-sm font-medium rounded-lg transition-all disabled:opacity-40 shadow-sm flex items-center"
             >
               {saving ? 'Saving...' : 'Save changes'}
             </button>

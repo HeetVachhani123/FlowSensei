@@ -205,7 +205,7 @@ export const RetroModal = ({ boardId, onClose }: RetroModalProps) => {
                     <button
                       onClick={(e) => handleDeleteRetro(e, retro.id)}
                       disabled={deletingRetroId === retro.id}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-red-500 opacity-80 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity disabled:opacity-50 min-w-[36px] min-h-[36px] flex items-center justify-center rounded"
                       aria-label="Delete retrospective"
                     >
                       {deletingRetroId === retro.id ? (
@@ -227,7 +227,7 @@ export const RetroModal = ({ boardId, onClose }: RetroModalProps) => {
             <button 
               onClick={onClose} 
               aria-label="Close retrospective modal"
-              className="p-2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 bg-white/50 dark:bg-[#18181b]/50 backdrop-blur rounded-full transition-colors min-w-[36px] min-h-[36px] flex items-center justify-center"
+              className="p-2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 bg-white/50 dark:bg-[#18181b]/50 backdrop-blur rounded-full transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
