@@ -9,7 +9,7 @@ import { Navbar } from './components/Navbar';
 import {  ToastProvider  } from './components/providers/ToastProvider';
 import {  ThemeProvider  } from './components/providers/ThemeProvider';
 
-// M16: Wrapper so Navbar can use useLocation (must be inside <Router>)
+// Application shell rendering Navbar and view routes inside Router
 const AppShell = () => {
   const location = useLocation();
   const hideNavbar = location.pathname === '/login';
@@ -24,7 +24,7 @@ const AppShell = () => {
             <Route path="/login" element={<Login />} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/board/:id" element={<ProtectedRoute><Board /></ProtectedRoute>} />
-            {/* P9: 404 catch-all */}
+            {/* 404 catch-all */}
             <Route path="*" element={
               <div className="min-h-screen flex flex-col items-center justify-center bg-zinc-50 dark:bg-[#0c0c0d] pt-16">
                 <div className="text-center animate-fade-in-up">

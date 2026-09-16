@@ -41,3 +41,6 @@ pnpm-debug.log*
 # Supabase
 .temp/
 supabase/.temp/
+
+# TypeScript build cache
+*.tsbuildinfo

@@ -9,10 +9,10 @@ type Mode = 'signin' | 'signup' | 'forgot';
 export const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);   // M1: password visibility
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
-  const [mode, setMode] = useState<Mode>('signin');           // M2: forgot password mode
+  const [mode, setMode] = useState<Mode>('signin');
   const [isLoading, setIsLoading] = useState(false);
 
   const navigate = useNavigate();
@@ -37,7 +37,7 @@ export const Login = () => {
 
     try {
       if (mode === 'forgot') {
-        // M2: Forgot password — send reset email via Supabase
+        // Send reset email via Supabase Auth
         const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
           redirectTo: `${window.location.origin}/login`,
         });
@@ -57,7 +57,11 @@ export const Login = () => {
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
-      setError(message || 'An error occurred');
+      if (message.toLowerCase().includes('failed to fetch')) {
+        setError('Unable to reach Supabase backend. Your database project may be paused due to inactivity in the Supabase Dashboard (https://supabase.com/dashboard).');
+      } else {
+        setError(message || 'An error occurred');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -137,7 +141,7 @@ export const Login = () => {
               <label className="block text-zinc-700 dark:text-zinc-300 text-xs font-medium mb-1.5" htmlFor="password">
                 Password
               </label>
-              {/* M1: Password visibility toggle */}
+              {/* Password visibility toggle */}
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
@@ -169,7 +173,7 @@ export const Login = () => {
             </div>
           )}
 
-          {/* M2: Forgot password link — only on signin mode */}
+          {/* Forgot password link */}
           {mode === 'signin' && (
             <div className="flex justify-end -mt-1">
               <button
@@ -182,7 +186,6 @@ export const Login = () => {
             </div>
           )}
 
-          {/* M3: Indigo gradient submit button */}
           <button
             type="submit"
             disabled={isLoading}

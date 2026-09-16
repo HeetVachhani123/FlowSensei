@@ -35,7 +35,7 @@ export const Board = () => {
   const [cards, setCards] = useState<CardType[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // M7: Board title editing
+  // Board title inline editing state
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleValue, setTitleValue] = useState('');
 
@@ -46,8 +46,10 @@ export const Board = () => {
   const [isRetroModalOpen, setIsRetroModalOpen] = useState(false);
   const { toast } = useToast();
 
-  // Derive user initial from email for the avatar
-  const userInitial = user?.email?.charAt(0).toUpperCase() ?? 'U';
+  // Derive user initial from email for the avatar (supporting demo identity)
+  const isDemo = user?.email?.toLowerCase().includes('test1234') || user?.email?.toLowerCase().includes('demo');
+  const userInitial = isDemo ? 'D' : (user?.email?.charAt(0).toUpperCase() ?? 'U');
+  const userDisplayTitle = isDemo ? 'Demo Engineer (demo@flowsensei.dev)' : (user?.email ?? 'You');
 
   // Capture URL search as a stable primitive for useCallback deps.
   // Invite tokens arrive via ?invite=... and are consumed once on first load.
@@ -55,7 +57,7 @@ export const Board = () => {
 
   const columnsRef = useRef<ColumnType[]>([]);
   const cardsRef = useRef<CardType[]>([]);
-  const initialCardsSnapshot = useRef<CardType[]>([]); // M10: True rollback state
+  const initialCardsSnapshot = useRef<CardType[]>([]); // Snapshot for optimistic update rollback
 
   // Multiplayer Live Cursors
   interface RemoteCursor {
@@ -340,7 +342,7 @@ export const Board = () => {
 
     const tempId = crypto.randomUUID();
     const now = new Date().toISOString();
-    // C5: Include all CardType fields so the temp card satisfies the full type (avoids runtime issues before DB responds)
+    // Include all CardType fields so the optimistic card satisfies the full interface before DB response
     const newCard: CardType = {
       id: tempId,
       column_id: columnId,
@@ -374,7 +376,7 @@ export const Board = () => {
   };
 
   const onDragStart = (event: DragStartEvent) => {
-    initialCardsSnapshot.current = cards; // M10: Snapshot before mutation
+    initialCardsSnapshot.current = cards; // Snapshot cards before optimistic mutation
     const { active } = event;
     const card = cards.find(c => c.id === active.id);
     if (card) setActiveCard(card);
@@ -420,11 +422,11 @@ export const Board = () => {
   };
 
   const onDragEnd = async (event: DragEndEvent) => {
-    const originalCard = activeCard; // M10: Capture before clearing
+    const originalCard = activeCard; // Capture active card before clearing state
     setActiveCard(null);
     const { active, over } = event;
     
-    // M10: Revert optimistic updates if dropped outside
+    // Revert optimistic updates if dropped outside valid droppable
     if (!over) {
       setCards(initialCardsSnapshot.current);
       return;
@@ -433,13 +435,13 @@ export const Board = () => {
     const activeId = active.id as string;
     const activeCardData = cards.find(c => c.id === activeId);
     
-    // M10: Glitch safety
+    // Guard against missing active card reference
     if (!activeCardData || !originalCard) {
       setCards(initialCardsSnapshot.current);
       return;
     }
 
-    // M10: Read source column from pre-drag state, not mutated state
+    // Read source column from pre-drag snapshot, not intermediate state
     const sourceColumnId = originalCard.column_id;
 
     let targetColumnId: string;
@@ -485,7 +487,7 @@ export const Board = () => {
       const message = err instanceof Error ? err.message : String(err);
       console.error('Drag operation failed:', message);
       toast({ title: 'Move failed', description: message, variant: 'error' });
-      setCards(initialCardsSnapshot.current); // M10: Proper rollback
+      setCards(initialCardsSnapshot.current); // Roll back to pre-drag state on mutation failure
     }
   };
 
@@ -534,7 +536,7 @@ export const Board = () => {
     </div>
   );
 
-  // M7: save board title to DB
+  // Persist updated board title to database
   const handleTitleSave = async () => {
     const trimmed = titleValue.trim();
     setIsEditingTitle(false);
@@ -549,19 +551,19 @@ export const Board = () => {
 
   return (
     <div className="flex flex-col h-screen pt-[52px] bg-zinc-50 dark:bg-[#0c0c0d] overflow-hidden">
-      <div className="px-6 py-3 bg-zinc-50/50 dark:bg-[#0c0c0d]/50 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800 z-10 flex justify-between items-center gap-4">
-        {/* M8: Breadcrumb */}
-        <div className="flex items-center gap-3 min-w-0">
+      <div className="px-3 sm:px-6 py-2.5 sm:py-3 bg-zinc-50/50 dark:bg-[#0c0c0d]/50 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800 z-10 flex justify-between items-center gap-2 sm:gap-4">
+        {/* Breadcrumb navigation */}
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <button
             onClick={() => navigate('/dashboard')}
-            className="flex items-center gap-1 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors text-sm flex-shrink-0"
+            className="flex items-center gap-1 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors text-sm flex-shrink-0 min-h-[38px] px-1"
             aria-label="Back to Dashboard"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
             <span className="hidden sm:inline font-medium">Boards</span>
           </button>
-          <span className="text-zinc-300 dark:text-zinc-700 text-sm flex-shrink-0">/</span>
-          {/* M7: Click board title to edit */}
+          <span className="text-zinc-400 dark:text-zinc-600 text-sm flex-shrink-0">/</span>
+          {/* Editable board title */}
           {isEditingTitle ? (
             <input
               autoFocus
@@ -572,11 +574,11 @@ export const Board = () => {
                 if (e.key === 'Enter') handleTitleSave();
                 if (e.key === 'Escape') { setTitleValue(board?.name || ''); setIsEditingTitle(false); }
               }}
-              className="text-xl font-bold bg-transparent border-b-2 border-indigo-500 focus:outline-none text-zinc-900 dark:text-zinc-100 tracking-tight min-w-0"
+              className="text-base sm:text-xl font-bold bg-transparent border-b-2 border-indigo-500 focus:outline-none text-zinc-900 dark:text-zinc-100 tracking-tight min-w-0 py-1"
             />
           ) : (
             <h1
-              className="text-xl font-bold text-zinc-900 dark:text-zinc-100 tracking-tight cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors truncate"
+              className="text-base sm:text-xl font-bold text-zinc-900 dark:text-zinc-100 tracking-tight cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors truncate max-w-[140px] sm:max-w-md py-1"
               onClick={() => { setTitleValue(board?.name || ''); setIsEditingTitle(true); }}
               title="Click to rename"
             >
@@ -585,13 +587,13 @@ export const Board = () => {
           )}
         </div>
         
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
           {/* Collaborator avatar — shows the logged-in user's initial */}
-          <div className="hidden sm:flex items-center">
-            <div className="flex -space-x-2">
+          <div className="flex items-center">
+            <div className="hidden sm:flex -space-x-2">
               <div
                 className="w-7 h-7 rounded-full bg-indigo-500 border-2 border-white dark:border-[#0c0c0d] flex items-center justify-center text-[10px] font-bold text-white"
-                title={user?.email ?? 'You'}
+                title={userDisplayTitle}
               >
                 {userInitial}
               </div>
@@ -607,18 +609,20 @@ export const Board = () => {
                 navigator.clipboard.writeText(inviteUrl);
                 toast({ title: 'Invite link copied!', description: 'Anyone with this link can join your board.', variant: 'success' });
               }}
-              className="ml-3 text-xs font-medium text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors bg-zinc-200/50 dark:bg-zinc-800/50 px-2 py-1 rounded active:scale-95"
+              className="sm:ml-3 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors bg-zinc-200/80 dark:bg-zinc-800/60 border border-zinc-300/80 dark:border-zinc-700/60 px-2.5 py-1.5 rounded active:scale-95 flex items-center gap-1 min-h-[36px]"
+              aria-label="Share board invite link"
             >
-              Share
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
+              <span>Share</span>
             </button>
           </div>
 
           <div className="w-px h-5 bg-zinc-300 dark:bg-zinc-800 hidden sm:block"></div>
 
-          {/* P2: AI Retro Premium Button */}
+          {/* AI Retro Action Button */}
           <button
             onClick={() => setIsRetroModalOpen(true)}
-            className="group relative flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 px-3 py-1.5 rounded-lg text-sm font-semibold shadow-md transition-all overflow-hidden flex-shrink-0"
+            className="group relative flex items-center gap-1.5 sm:gap-2 bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold shadow-md transition-all overflow-hidden flex-shrink-0 min-h-[36px]"
             aria-label="Open AI Retrospective"
           >
             {/* Subtle animated gradient background */}
@@ -633,7 +637,7 @@ export const Board = () => {
         ref={boardContainerRef}
         onPointerMove={handlePointerMove}
         onPointerLeave={handlePointerLeave}
-        className="flex-1 overflow-x-auto p-6 custom-scrollbar relative"
+        className="flex-1 overflow-x-auto p-3 sm:p-6 custom-scrollbar relative scroll-smooth"
       >
         {/* Live Multiplayer Teammate Cursors */}
         {Object.entries(remoteCursors).map(([peerId, cursor]) => (
@@ -655,7 +659,7 @@ export const Board = () => {
           onDragOver={onDragOver}
           onDragEnd={onDragEnd}
         >
-          <div className="flex gap-4 items-start h-full pb-8">
+          <div className="flex gap-3 sm:gap-4 items-start h-full pb-8">
             {columns.map(col => (
               <Column 
                 key={col.id} 
@@ -669,7 +673,7 @@ export const Board = () => {
             ))}
             
             {/* Add Column Button */}
-            <div className="bg-zinc-50/50 dark:bg-[#121214] p-3 rounded-xl w-[280px] flex-shrink-0 border border-dashed border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors">
+            <div className="bg-zinc-50/50 dark:bg-[#121214] p-3 rounded-xl w-[82vw] max-w-[300px] sm:w-[280px] flex-shrink-0 border border-dashed border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors">
               {isAddingColumn ? (
                 <form onSubmit={handleAddColumn} className="flex flex-col gap-2">
                   <input
@@ -682,14 +686,15 @@ export const Board = () => {
                     className="w-full px-3 py-2 bg-white dark:bg-[#18181b] border border-zinc-300 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 text-sm text-zinc-900 dark:text-white"
                   />
                   <div className="flex gap-2 items-center">
-                    <button type="submit" className="bg-indigo-500 hover:bg-indigo-600 text-white px-3 py-1 text-xs font-medium rounded-md transition-colors">Add</button>
-                    <button type="button" onClick={() => setIsAddingColumn(false)} className="text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 text-xs font-medium px-2">Cancel</button>
+                    <button type="submit" className="bg-indigo-500 hover:bg-indigo-600 text-white px-3 py-1.5 text-xs font-medium rounded-md transition-colors min-h-[32px]">Add</button>
+                    <button type="button" onClick={() => setIsAddingColumn(false)} className="text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 text-xs font-medium px-2 py-1.5 min-h-[32px]">Cancel</button>
                   </div>
                 </form>
               ) : (
                 <button 
                   onClick={() => setIsAddingColumn(true)}
-                  className="w-full h-10 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 text-sm font-medium flex items-center justify-center gap-2 transition-colors rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800/50"
+                  aria-label="Add new column"
+                  className="w-full h-11 text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 text-sm font-medium flex items-center justify-center gap-2 transition-colors rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800/50"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
                   Add column

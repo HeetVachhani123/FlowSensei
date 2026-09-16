@@ -22,8 +22,13 @@ export const Navbar = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const isDemoEmail = user?.email?.toLowerCase().includes('test1234') || user?.email?.toLowerCase().includes('demo');
+  const displayEmail = isDemoEmail ? 'demo@flowsensei.dev' : user?.email;
+  const displayName = isDemoEmail ? 'Demo Engineer' : (user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User');
+  const userInitial = displayName.charAt(0).toUpperCase();
+
   return (
-    <nav className="fixed top-0 w-full z-50 bg-zinc-50/80 dark:bg-[#0c0c0d]/80 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800 transition-colors duration-300">
+    <nav className="fixed top-0 w-full z-50 bg-white/80 dark:bg-[#0c0c0d]/80 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800 transition-colors duration-300">
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-[52px]">
           <div className="flex-shrink-0 flex items-center gap-2.5 cursor-pointer" onClick={() => navigate(user ? '/dashboard' : '/', { replace: true })}>
@@ -65,17 +70,29 @@ export const Navbar = () => {
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                   className="flex items-center justify-center w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-400 text-xs font-bold ring-2 ring-transparent hover:ring-indigo-500/30 transition-all focus:outline-none"
                   aria-label="User Menu"
+                  aria-haspopup="true"
+                  aria-expanded={isDropdownOpen}
                 >
-                  {user.email?.charAt(0).toUpperCase() || 'U'}
+                  {userInitial}
                 </button>
 
                 {isDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-48 py-1 bg-white dark:bg-[#18181b] rounded-lg shadow-xl border border-zinc-200 dark:border-zinc-800 origin-top-right animate-in fade-in slide-in-from-top-2 z-50">
+                  <div 
+                    role="menu"
+                    aria-label="User actions"
+                    className="absolute right-0 mt-2 w-56 py-1 bg-white dark:bg-[#18181b] rounded-xl shadow-xl border border-zinc-200 dark:border-zinc-800 origin-top-right animate-modal-pop z-50"
+                  >
                     <div className="px-4 py-3 border-b border-zinc-100 dark:border-zinc-800/50 mb-1">
-                      <p className="text-[11px] text-zinc-500 dark:text-zinc-400 font-medium uppercase tracking-wider mb-0.5">Signed in as</p>
-                      <p className="text-sm text-zinc-900 dark:text-zinc-100 font-semibold truncate" title={user.email}>{user.email}</p>
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <p className="text-sm text-zinc-900 dark:text-zinc-100 font-bold truncate">{displayName}</p>
+                        <span className="px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800/60 text-indigo-700 dark:text-indigo-300 font-mono text-[9px] font-bold">
+                          OWNER
+                        </span>
+                      </div>
+                      <p className="text-xs font-mono text-zinc-500 dark:text-zinc-400 truncate" title={displayEmail}>{displayEmail}</p>
                     </div>
                     <button
+                      role="menuitem"
                       onClick={() => { setIsDropdownOpen(false); navigate('/'); }}
                       className="w-full text-left px-4 py-2 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors font-medium flex items-center gap-2"
                     >
@@ -83,6 +100,7 @@ export const Navbar = () => {
                       Home page
                     </button>
                     <button
+                      role="menuitem"
                       onClick={() => { setIsDropdownOpen(false); navigate('/dashboard'); }}
                       className="w-full text-left px-4 py-2 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors font-medium flex items-center gap-2"
                     >
@@ -90,6 +108,7 @@ export const Navbar = () => {
                       Dashboard
                     </button>
                     <button
+                      role="menuitem"
                       onClick={() => { setIsDropdownOpen(false); signOut(); navigate('/login'); }}
                       className="w-full text-left px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors font-medium flex items-center gap-2 border-t border-zinc-100 dark:border-zinc-800/50"
                     >

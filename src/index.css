@@ -158,40 +158,66 @@ body {
   animation: skeleton-wave 1.6s ease-in-out infinite;
 }
 
-/* Multiplayer Cursor Animations for Showcase */
-@keyframes cursor-wander-1 {
+/* Modal entrance pop animation */
+@keyframes modal-pop {
   0% {
-    transform: translate(110px, 120px);
-  }
-  25% {
-    transform: translate(250px, 95px);
-  }
-  50% {
-    transform: translate(290px, 150px);
-  }
-  75% {
-    transform: translate(170px, 175px);
+    opacity: 0;
+    transform: scale(0.96) translateY(8px);
   }
   100% {
-    transform: translate(110px, 120px);
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-modal-pop {
+  animation: modal-pop 0.24s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Backdrop fade animation */
+@keyframes backdrop-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-backdrop-fade {
+  animation: backdrop-fade 0.2s ease-out both;
+}
+
+/* Multiplayer Cursor Animations for Showcase (cleanly anchored in card areas) */
+@keyframes cursor-wander-1 {
+  0% {
+    transform: translate(130px, 140px);
+  }
+  25% {
+    transform: translate(260px, 170px);
+  }
+  50% {
+    transform: translate(320px, 240px);
+  }
+  75% {
+    transform: translate(170px, 210px);
+  }
+  100% {
+    transform: translate(130px, 140px);
   }
 }
 
 @keyframes cursor-wander-2 {
   0% {
-    transform: translate(520px, 210px);
+    transform: translate(520px, 230px);
   }
   30% {
-    transform: translate(660px, 35px);
+    transform: translate(640px, 150px);
   }
   60% {
-    transform: translate(440px, 110px);
+    transform: translate(490px, 180px);
   }
   85% {
-    transform: translate(580px, 140px);
+    transform: translate(600px, 250px);
   }
   100% {
-    transform: translate(520px, 210px);
+    transform: translate(520px, 230px);
   }
 }
 

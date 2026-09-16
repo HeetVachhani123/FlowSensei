@@ -21,8 +21,18 @@ export const RetroModal = ({ boardId, onClose }: RetroModalProps) => {
   const [generating, setGenerating] = useState(false);
   const [selectedRetro, setSelectedRetro] = useState<Retro | null>(null);
   const [deletingRetroId, setDeletingRetroId] = useState<string | null>(null);
-  const lastGenerateTime = React.useRef(0);  // S1: rate limiting
+  const [cooldownSeconds, setCooldownSeconds] = useState(0);
+  const lastGenerateTime = React.useRef(0);
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (cooldownSeconds > 0) {
+      const timer = setTimeout(() => {
+        setCooldownSeconds(prev => Math.max(0, prev - 1));
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [cooldownSeconds]);
 
   const fetchRetros = useCallback(async () => {
     setLoading(true);
@@ -50,10 +60,10 @@ export const RetroModal = ({ boardId, onClose }: RetroModalProps) => {
   }, [fetchRetros, onClose]);
 
   const handleGenerate = async () => {
-    // S1: 5-second rate limit cooldown
+    // 5-second client-side rate limit cooldown
     const now = Date.now();
-    if (now - lastGenerateTime.current < 5000) {
-      toast({ title: 'Please wait', description: 'You can only generate a retro every few seconds.', variant: 'warning' });
+    if (generating || cooldownSeconds > 0 || now - lastGenerateTime.current < 5000) {
+      toast({ title: 'Please wait', description: 'Rate limit cooldown in effect. Please wait a few seconds.', variant: 'warning' });
       return;
     }
     lastGenerateTime.current = now;
@@ -64,7 +74,7 @@ export const RetroModal = ({ boardId, onClose }: RetroModalProps) => {
       const { data: columns } = await supabase.from('columns').select('*').eq('board_id', boardId);
       const { data: cards } = await supabase.from('cards').select('*, columns!inner(board_id)').eq('columns.board_id', boardId);
 
-      // C6: Guard against empty board — pointless to call Groq with no task data
+      // Guard against empty board before calling AI service
       if (!cards || cards.length === 0) {
         toast({
           title: 'No cards to analyze',
@@ -116,10 +126,11 @@ export const RetroModal = ({ boardId, onClose }: RetroModalProps) => {
       toast({ title: 'Error generating retro', description: message, variant: 'error' });
     } finally {
       setGenerating(false);
+      setCooldownSeconds(5);
     }
   };
 
-  // M12: Delete a past retro
+  // Delete an existing retrospective
   const handleDeleteRetro = async (e: React.MouseEvent, retroId: string) => {
     e.stopPropagation();
     setDeletingRetroId(retroId);
@@ -136,9 +147,12 @@ export const RetroModal = ({ boardId, onClose }: RetroModalProps) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-900/40 dark:bg-black/60 backdrop-blur-sm animate-fade-in-up">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-900/40 dark:bg-black/60 backdrop-blur-sm animate-backdrop-fade">
       <div 
-        className="bg-white dark:bg-[#18181b] w-full max-w-5xl h-[85vh] rounded-xl shadow-2xl border border-zinc-200 dark:border-zinc-800 flex overflow-hidden"
+        role="dialog"
+        aria-modal="true"
+        aria-label="AI Retrospectives"
+        className="bg-white dark:bg-[#18181b] w-full max-w-5xl h-[85vh] rounded-xl shadow-2xl border border-zinc-200 dark:border-zinc-800 flex overflow-hidden animate-modal-pop"
         onClick={e => e.stopPropagation()}
       >
         
@@ -154,18 +168,21 @@ export const RetroModal = ({ boardId, onClose }: RetroModalProps) => {
           <div className="p-4 flex-1 overflow-y-auto custom-scrollbar">
             <button
               onClick={handleGenerate}
-              disabled={generating}
-              className="w-full mb-6 flex items-center justify-center gap-2 bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2.5 rounded-lg font-medium text-sm transition-colors shadow-sm disabled:opacity-50"
+              disabled={generating || cooldownSeconds > 0}
+              aria-label={generating ? 'Analyzing board' : cooldownSeconds > 0 ? `Rate limit cooldown active, wait ${cooldownSeconds} seconds` : 'Generate Retro'}
+              className="w-full mb-6 flex items-center justify-center gap-2 bg-indigo-500 hover:bg-indigo-600 active:scale-[0.98] text-white px-4 py-2.5 rounded-lg font-medium text-sm transition-all shadow-sm disabled:opacity-50 min-h-[42px]"
             >
               {generating ? (
                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+              ) : cooldownSeconds > 0 ? (
+                <svg className="w-4 h-4 animate-spin text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" strokeWidth="2" strokeDasharray="30 60" /></svg>
               ) : (
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
               )}
-              {generating ? 'Analyzing...' : 'Generate Retro'}
+              {generating ? 'Analyzing...' : cooldownSeconds > 0 ? `Wait (${cooldownSeconds}s)` : 'Generate Retro'}
             </button>
 
-            <h4 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">Past Retros</h4>
+            <h4 className="text-xs font-mono font-bold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider mb-3">Past Retros</h4>
             
             {loading ? (
               <div className="animate-pulse flex flex-col gap-2">
@@ -173,18 +190,18 @@ export const RetroModal = ({ boardId, onClose }: RetroModalProps) => {
                 <div className="h-10 bg-zinc-200 dark:bg-zinc-800/50 rounded-lg"></div>
               </div>
             ) : retros.length === 0 ? (
-              <p className="text-xs text-zinc-500 text-center py-4">No retros yet.</p>
+              <p className="text-xs font-mono text-zinc-500 dark:text-zinc-400 text-center py-4">No retros yet.</p>
             ) : (
               <div className="flex flex-col gap-2">
                 {retros.map(retro => (
                   <div key={retro.id} className="group relative">
                     <button
                       onClick={() => setSelectedRetro(retro)}
-                      className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors pr-8 ${selectedRetro?.id === retro.id ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium' : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/50'}`}
+                      className={`w-full text-left px-3 py-2 rounded-lg text-xs font-mono transition-colors pr-8 ${selectedRetro?.id === retro.id ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-bold' : 'text-zinc-700 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/50 font-medium'}`}
                     >
-                      {new Date(retro.created_at).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      {new Date(retro.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                     </button>
-                    {/* M12: Delete retro button */}
+                    {/* Delete retro button */}
                     <button
                       onClick={(e) => handleDeleteRetro(e, retro.id)}
                       disabled={deletingRetroId === retro.id}
@@ -207,14 +224,18 @@ export const RetroModal = ({ boardId, onClose }: RetroModalProps) => {
         {/* Right Content: Retro Markdown Viewer */}
         <div className="flex-1 flex flex-col relative bg-white dark:bg-[#18181b]">
           <div className="absolute top-4 right-4 z-10">
-            <button onClick={onClose} className="p-2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 bg-white/50 dark:bg-[#18181b]/50 backdrop-blur rounded-full transition-colors">
+            <button 
+              onClick={onClose} 
+              aria-label="Close retrospective modal"
+              className="p-2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 bg-white/50 dark:bg-[#18181b]/50 backdrop-blur rounded-full transition-colors min-w-[36px] min-h-[36px] flex items-center justify-center"
+            >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
           </div>
 
           <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
             {generating ? (
-              <div className="h-full flex flex-col items-center justify-center text-zinc-500 dark:text-zinc-400 space-y-4">
+              <div className="h-full flex flex-col items-center justify-center text-zinc-600 dark:text-zinc-400 space-y-4">
                 <div className="w-12 h-12 border-4 border-indigo-200 border-t-indigo-500 rounded-full animate-spin"></div>
                 <p className="font-medium animate-pulse">Sensei is analyzing your board...</p>
               </div>
@@ -223,8 +244,8 @@ export const RetroModal = ({ boardId, onClose }: RetroModalProps) => {
                 <ReactMarkdown>{selectedRetro.content}</ReactMarkdown>
               </div>
             ) : (
-              <div className="h-full flex flex-col items-center justify-center text-zinc-400">
-                <svg className="w-16 h-16 mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+              <div className="h-full flex flex-col items-center justify-center text-zinc-500 dark:text-zinc-400">
+                <svg className="w-16 h-16 mb-4 opacity-40 text-zinc-400 dark:text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
                 <p className="font-medium">Generate your first AI Retrospective</p>
                 <p className="text-sm mt-1">Get insights on what went well and what got stuck.</p>
               </div>

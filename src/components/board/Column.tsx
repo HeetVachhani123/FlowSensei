@@ -19,7 +19,7 @@ type ColumnProps = {
   onAddCard: (columnId: string, title: string) => void;
   onCardClick: (card: CardType) => void;
   onDelete: (columnId: string) => void;
-  onRename: (columnId: string, newName: string) => void;  // M6
+  onRename: (columnId: string, newName: string) => void;
 };
 
 export const Column = ({ column, cards, onAddCard, onCardClick, onDelete, onRename }: ColumnProps) => {
@@ -29,7 +29,7 @@ export const Column = ({ column, cards, onAddCard, onCardClick, onDelete, onRena
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   
-  // M6: Column inline rename
+  // Column inline rename state
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(column.name);
   const renameInputRef = useRef<HTMLInputElement>(null);
@@ -91,7 +91,7 @@ export const Column = ({ column, cards, onAddCard, onCardClick, onDelete, onRena
     }
   };
 
-  // M6: Save renamed column to DB
+  // Save renamed column to DB
   const handleRenameSubmit = async () => {
     const trimmed = renameValue.trim();
     if (!trimmed || trimmed === column.name) {
@@ -130,11 +130,13 @@ export const Column = ({ column, cards, onAddCard, onCardClick, onDelete, onRena
   return (
     <div 
       ref={setNodeRef}
-      className={`column bg-zinc-50/50 dark:bg-[#121214] p-3 rounded-xl w-[280px] flex-shrink-0 flex flex-col max-h-full border border-zinc-200 dark:border-zinc-800/80 ${isDeleting ? 'opacity-50 pointer-events-none' : ''}`}
+      role="region"
+      aria-label={`Column: ${column.name}`}
+      className={`column bg-zinc-100/70 dark:bg-[#121214] p-3 rounded-xl w-[82vw] max-w-[300px] sm:w-[280px] flex-shrink-0 flex flex-col max-h-full border border-zinc-200/80 dark:border-zinc-800/80 ${isDeleting ? 'opacity-50 pointer-events-none' : ''}`}
     >
       <div className="flex justify-between items-center mb-3 px-1 group">
         <div className="flex items-center gap-2 flex-1 min-w-0">
-          {/* M6: Double-click to rename */}
+          {/* Double-click to rename */}
           {isRenaming ? (
             <input
               ref={renameInputRef}
@@ -146,7 +148,7 @@ export const Column = ({ column, cards, onAddCard, onCardClick, onDelete, onRena
                 if (e.key === 'Enter') handleRenameSubmit();
                 if (e.key === 'Escape') { setRenameValue(column.name); setIsRenaming(false); }
               }}
-              className="flex-1 font-semibold text-sm text-zinc-900 dark:text-zinc-100 bg-white dark:bg-[#18181b] border border-indigo-400 rounded px-1.5 py-0.5 focus:outline-none focus:ring-1 focus:ring-indigo-500 min-w-0"
+              className="flex-1 font-semibold text-sm text-zinc-900 dark:text-zinc-100 bg-white dark:bg-[#18181b] border border-indigo-400 rounded px-1.5 py-0.5 focus:outline-none focus:ring-1 focus:ring-indigo-500 min-w-0 font-sans"
             />
           ) : (
             <h3
@@ -158,10 +160,10 @@ export const Column = ({ column, cards, onAddCard, onCardClick, onDelete, onRena
             </h3>
           )}
           <div 
-            className={`text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0 transition-colors ${
-              cards.length >= 8 ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
-              cards.length >= 4 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-500' :
-              'bg-zinc-200/50 text-zinc-600 dark:bg-zinc-800/50 dark:text-zinc-400'
+            className={`text-xs font-mono font-bold px-2 py-0.5 rounded-full flex-shrink-0 transition-colors ${
+              cards.length >= 8 ? 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300' :
+              cards.length >= 4 ? 'bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-300' :
+              'bg-zinc-200/80 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'
             }`}
             title={`${cards.length} card${cards.length !== 1 ? 's' : ''}`}
           >
@@ -171,15 +173,19 @@ export const Column = ({ column, cards, onAddCard, onCardClick, onDelete, onRena
         <button 
           onClick={() => setIsConfirmOpen(true)}
           disabled={isDeleting}
-          className="text-zinc-400 hover:text-red-500 dark:hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50 ml-1 flex-shrink-0"
+          className="text-zinc-400 hover:text-red-500 dark:hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50 ml-1 flex-shrink-0 min-w-[28px] min-h-[28px] flex items-center justify-center"
           title="Delete column"
-          aria-label="Delete column"
+          aria-label={`Delete column ${column.name}`}
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
         </button>
       </div>
       
-      <div className="flex-1 overflow-y-auto min-h-[150px] custom-scrollbar pr-1">
+      <div 
+        role="list"
+        aria-label={`Cards in ${column.name}`}
+        className="flex-1 overflow-y-auto min-h-[150px] custom-scrollbar pr-1"
+      >
         <SortableContext items={cards.map(c => c.id)} strategy={verticalListSortingStrategy}>
           {cards.map(card => (
             <Card 
@@ -212,14 +218,15 @@ export const Column = ({ column, cards, onAddCard, onCardClick, onDelete, onRena
               rows={2}
             />
             <div className="flex gap-2 items-center">
-              <button type="submit" className="bg-indigo-500 hover:bg-indigo-600 text-white px-3 py-1 text-xs font-medium rounded-md transition-colors">Add</button>
-              <button type="button" onClick={() => setIsAdding(false)} className="text-zinc-500 dark:text-zinc-400 text-xs hover:text-zinc-900 dark:hover:text-zinc-100 font-medium px-2 transition-colors">Cancel</button>
+              <button type="submit" className="bg-indigo-500 hover:bg-indigo-600 text-white px-3 py-1.5 text-xs font-medium rounded-md transition-colors min-h-[32px]">Add</button>
+              <button type="button" onClick={() => setIsAdding(false)} className="text-zinc-500 dark:text-zinc-400 text-xs hover:text-zinc-900 dark:hover:text-zinc-100 font-medium px-2 py-1.5 transition-colors min-h-[32px]">Cancel</button>
             </div>
           </form>
         ) : (
           <button 
             onClick={() => setIsAdding(true)} 
-            className="w-full flex items-center gap-2 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800/50 px-2 py-1.5 rounded-md text-sm font-medium transition-colors"
+            aria-label={`Add card to ${column.name}`}
+            className="w-full flex items-center gap-2 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/50 px-2 py-2 rounded-md text-sm font-medium transition-colors min-h-[36px]"
           >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
             Add card

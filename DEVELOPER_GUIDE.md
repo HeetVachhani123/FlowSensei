@@ -1,118 +1,114 @@
-# FlowSensei - Developer & Architecture Guide
+# FlowSensei — Developer & Architecture Guide
 
-This document serves as a comprehensive "brain dump" of the FlowSensei architecture. Whether you are returning to this project after a long break, onboarding a new developer, or explaining the project in an interview, this guide breaks down exactly how everything works under the hood.
+This document outlines the technical architecture, data model, communication protocols, and security implementation of FlowSensei.
 
 ---
 
 ## 1. High-Level Architecture
 
-FlowSensei is a **Full-Stack Serverless Application**. 
-- **Frontend:** A React Single Page Application (SPA) built with Vite and TypeScript.
-- **Backend/Database:** Supabase (PostgreSQL). There is no traditional "server" (like an Express.js or Python backend). Instead, the frontend talks directly to the Postgres database securely using Row-Level Security (RLS) policies.
-- **Serverless Compute:** Supabase Edge Functions (Deno) are used strictly for securely running the AI Retrospective logic without exposing API keys to the browser.
+FlowSensei follows a full-stack serverless architecture:
+- **Frontend:** Single-page application built with React 18, TypeScript, Vite, and Tailwind CSS.
+- **Backend & Database:** Supabase (PostgreSQL 15) managing data persistence, GoTrue authentication, and Row-Level Security (RLS) policies. Database queries and mutations execute directly from the client via Supabase client libraries scoped by active session tokens.
+- **Serverless Compute:** Supabase Edge Functions (Deno runtime) handle server-side integrations, specifically executing AI retrospective requests to keep external API credentials isolated from client environments.
 
 ---
 
 ## 2. Directory Structure
 
-Here is where everything lives:
-
 ```text
 FlowSensei/
-├── supabase/                       # All backend configuration
-│   ├── schema.sql                  # The entire database schema (tables & RLS policies)
+├── supabase/                       # Backend configuration and database migrations
+│   ├── schema.sql                  # Database schema definitions and RLS policies
 │   └── functions/
-│       └── generate-retro/         # The Edge Function code for AI generation
-├── src/                            # All frontend React code
+│       └── generate-retro/         # Deno Edge Function for AI generation
+├── src/                            # Frontend application source
 │   ├── components/                 # Reusable UI components
-│   │   ├── board/                  # Kanban-specific components (Column, Card, etc.)
-│   │   ├── ConfirmDialog.tsx       # Custom delete confirmation modal
-│   │   └── toast.tsx               # Toast notification system
-│   ├── hooks/                      
-│   │   ├── useAuth.tsx             # Global authentication state context
-│   │   └── useTheme.tsx            # Dark/Light mode manager
+│   │   ├── board/                  # Kanban components (Column, Card, CardModal, RetroModal)
+│   │   ├── providers/              # Context providers (Auth, Theme, Toast)
+│   │   ├── ConfirmDialog.tsx       # Modals for destructive action confirmations
+│   │   ├── ErrorBoundary.tsx       # Top-level React error boundary
+│   │   └── Navbar.tsx              # Global navigation bar
+│   ├── hooks/                      # Custom hooks (useAuth, useTheme, useToast)
 │   ├── lib/
-│   │   └── supabaseClient.ts       # Singleton instance of the Supabase JS client
-│   ├── pages/                      # Top-level route components
-│   │   ├── Board.tsx               # The main Kanban board view (Drag-and-Drop + Realtime)
-│   │   ├── Dashboard.tsx           # The project selection screen
-│   │   └── Login.tsx               # Auth screen
-│   ├── App.tsx                     # React Router configuration
-│   └── index.css                   # Tailwind CSS imports & global styles
-├── vercel.json                     # Routing config for Vercel deployment
-└── .env.local                      # Environment variables (Supabase keys)
+│   │   ├── supabaseClient.ts       # Supabase client singleton
+│   │   └── labelConfig.ts          # Color-mapping configuration for card labels
+│   ├── pages/                      # Route-level views
+│   │   ├── Board.tsx               # Primary Kanban board with drag-and-drop & realtime
+│   │   ├── Dashboard.tsx           # Board directory and workspace management
+│   │   ├── Landing.tsx             # Marketing and feature landing page
+│   │   └── Login.tsx               # Authentication page
+│   ├── test/                       # Unit and integration test suites
+│   ├── App.tsx                     # Application shell and route declarations
+│   ├── main.tsx                    # React application entry point
+│   └── index.css                   # Global styles and Tailwind utility directives
+├── vercel.json                     # SPA client rewrite rules for hosting
+└── .env.local                      # Local environment variables (Supabase URL & anon key)
 ```
 
 ---
 
-## 3. The Database Data Model
+## 3. Database Data Model
 
-The app relies on a fully relational PostgreSQL database hosted on Supabase.
+The application uses a relational schema defined in `supabase/schema.sql`:
 
-*   **`boards`**: Represents a single project/workspace.
-*   **`board_members`**: A junction table linking a user to a board with a specific `role` (e.g., owner). This is crucial for security to ensure users can only see boards they belong to.
-*   **`columns`**: Represents a column (e.g., "To Do", "In Progress"). It belongs to a specific `board_id` and has a `position` integer for ordering.
-*   **`cards`**: Represents a task. It belongs to a specific `column_id` and `board_id`. It stores title, description, labels, due date, and a `position` integer for vertical ordering.
+* **`boards`**: Stores project workspaces (`id`, `name`, `created_at`, `updated_at`).
+* **`board_members`**: Junction table establishing user access to boards, mapping `user_id` and `board_id` with designated `role` flags (`owner`, `member`).
+* **`columns`**: Represents workflow stages (e.g., "To Do", "In Progress", "Done"), associated with a parent `board_id` and an integer `position` index for horizontal ordering.
+* **`cards`**: Represents actionable tasks associated with a `column_id` and `board_id`. Stores `title`, `description`, `labels` (array), `due_date`, and an integer `position` for vertical ordering.
+* **`retros`**: Persists generated Markdown sprint retrospectives linked to `board_id`.
 
 ---
 
-## 4. Key Mechanisms Explained
+## 4. Key Mechanisms
 
 ### A. Real-Time Collaboration (WebSockets)
-**File:** `src/pages/Board.tsx`
+**Implementation:** `src/pages/Board.tsx`
 
-If two users have the same board open, they see changes instantly. This is achieved using **Supabase Realtime**. 
-1. In `Board.tsx`, we create a `supabase.channel()`.
-2. We subscribe to `postgres_changes` for the `columns` and `cards` tables, specifically filtering by the current `board_id`.
-3. Whenever *anyone* INSERTS, UPDATES, or DELETES a row in the database, the WebSocket pushes an event to the browser.
-4. The React app catches this event and updates the local state array (`setCards` or `setColumns`), causing the UI to re-render for everyone seamlessly.
+FlowSensei provides live multi-user synchronization using Supabase Realtime channels:
+1. When a user navigates to a board, a channel subscription is registered via `supabase.channel()`.
+2. The channel listens to `postgres_changes` on both `columns` and `cards` tables filtered by the current `board_id`.
+3. Database mutations (`INSERT`, `UPDATE`, `DELETE`) broadcast event payloads to all connected clients over WebSockets.
+4. Active clients ingest the event and update local React state (`cards`, `columns`), synchronizing views without polling.
 
 ### B. Drag-and-Drop & Optimistic UI
-**File:** `src/pages/Board.tsx` (`handleDragEnd`)
+**Implementation:** `src/pages/Board.tsx` (`handleDragEnd`)
 
-Dragging is handled by `@dnd-kit/core`. The tricky part is network latency. If we waited for the database to confirm a drag, the UI would feel laggy and terrible.
-To fix this, we use **Optimistic Updates**:
-1. User drops a card in a new column.
-2. The frontend *immediately* updates the React state to show the card in the new column.
-3. Behind the scenes, it fires an `UPDATE` request to Supabase.
-4. *Self-Correction:* To prevent the Realtime WebSocket from conflicting with our local optimistic update and causing the card to "flicker" or jump around, the Realtime listener ignores WebSocket events that match the active drag item.
+Drag-and-drop interactions rely on `@dnd-kit/core` and `@dnd-kit/sortable`:
+1. When a drag action completes across or within columns, local state mutates optimistically to prevent interface latency.
+2. A snapshot of the pre-drag card arrangement is retained in an internal reference.
+3. The mutation is dispatched asynchronously to Supabase. If the network request fails, state rolls back immediately to the snapshot and an error notification is displayed.
+4. During drag operations, remote WebSocket updates matching the active drag identifier are ignored locally to prevent layout jitter.
 
-### C. The AI Retrospective ("Sensei")
-**Files:** `src/components/board/RetroModal.tsx` & `supabase/functions/generate-retro/index.ts`
+### C. AI Retrospective Pipeline
+**Implementation:** `src/components/board/RetroModal.tsx` & `supabase/functions/generate-retro/index.ts`
 
-When a user clicks "Generate Retro":
-1. The frontend gathers all columns and cards on the board and sends them to our secure Supabase Edge Function.
-2. The Edge function securely retrieves the `GROQ_API_KEY` from Supabase secrets.
-3. It maps the board data into a JSON string and sends a prompt to Groq's **Llama 3** model, asking it to analyze bottlenecks and output a Markdown report.
-4. The frontend receives the Markdown string and renders it beautifully using `react-markdown`.
+1. When triggered from the board interface, current column titles and card distribution summaries are compiled into a payload.
+2. The client invokes the Supabase Edge Function endpoint (`/functions/v1/generate-retro`) passing the user's JWT bearer token.
+3. The Edge Function accesses the server-side `GROQ_API_KEY` secret, constructs a structured prompt, and queries Groq's `openai/gpt-oss-120b` endpoint.
+4. The response content is validated and returned to the client as Markdown, where it is rendered via `react-markdown` and persisted in the `retros` database table.
 
 ---
 
 ## 5. Security & Authentication
 
-### GoTrue Auth
-User signup/login is handled by Supabase Auth (GoTrue). The session token is automatically stored in `localStorage` and attached to all future database requests.
+### Authentication (GoTrue)
+User sessions are managed by Supabase GoTrue Auth. Session tokens and refresh tokens persist securely in browser storage and attach to API requests via the `Authorization: Bearer` header.
 
 ### Row-Level Security (RLS)
-The database is heavily locked down. By default, no one can read or write anything. We use PostgreSQL RLS policies to write rules like:
-* *"Users can view boards they are a member of"*
-* *"Users can insert columns on boards they own"*
+Data access is restricted at the PostgreSQL engine level using Row-Level Security:
+- Unauthenticated requests cannot read or write to tables.
+- Board read and write access require an active membership row in `board_members` matching `auth.uid()`.
+- Destructive operations (such as column or board deletions) enforce ownership checks via relational subqueries.
 
-**⚠️ DEPLOYMENT ACTION REQUIRED:**
-The `schema.sql` now has correct, JOIN-based DELETE policies for `columns` and `cards`. However, if your **deployed Supabase** database was created before this fix, it may still have the old permissive `using (true)` policies.
+For historical background regarding RLS policy hardening during initial development, refer to [`SECURITY_VERIFICATION.md`](./SECURITY_VERIFICATION.md).
 
-**Before going live, follow the steps in [`SECURITY_VERIFICATION.md`](./SECURITY_VERIFICATION.md)** to verify and fix your production Supabase RLS policies using the SQL Editor.
-
-### S2 — Anon Key Exposure is Intentional
-You will see the `VITE_SUPABASE_ANON_KEY` exposed in the client bundle. **This is completely safe and intentional.** Supabase uses this key to identify the *project*, not to grant administrative access. All data access is strictly governed by the RLS policies and JWT session token.
+### Anonymous Key Usage
+The `VITE_SUPABASE_ANON_KEY` is bundled within the client build. This key acts as an application identifier rather than an administrative credential. All read, write, and delete operations remain governed by PostgreSQL RLS policies evaluated against the authenticated user's JWT.
 
 ---
 
-## 6. Frontend State Management
+## 6. State Management
 
-Instead of heavy tools like Redux, FlowSensei relies on standard React patterns:
-- **Global State:** Auth context (`useAuth.tsx`) and Theme context (`useTheme.tsx`).
-- **Local State:** `Board.tsx` holds the master array of `columns` and `cards`. Child components (like `Column.tsx` and `CardModal.tsx`) receive data and mutation functions via props.
-
-## Summary 
-FlowSensei is a prime example of a modern, serverless application. It pushes heavy lifting (like WebSockets and AI integrations) to managed services (Supabase & Groq), allowing the frontend to remain lightweight, blazing fast, and highly interactive.
+The application uses standard React state patterns:
+- **Global State:** React contexts manage authentication state (`AuthProvider.tsx`), theme mode (`ThemeProvider.tsx`), and alert notifications (`ToastProvider.tsx`).
+- **Board State:** `Board.tsx` serves as the single source of truth for active board columns and cards, passing mutation callbacks downward to `Column.tsx`, `Card.tsx`, and associated modals.
