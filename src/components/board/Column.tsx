@@ -132,7 +132,7 @@ export const Column = ({ column, cards, onAddCard, onCardClick, onDelete, onRena
       ref={setNodeRef}
       role="region"
       aria-label={`Column: ${column.name}`}
-      className={`column bg-zinc-100/70 dark:bg-[#121214] p-3 rounded-xl w-[82vw] max-w-[300px] sm:w-[280px] flex-shrink-0 flex flex-col max-h-full border border-zinc-200/80 dark:border-zinc-800/80 ${isDeleting ? 'opacity-50 pointer-events-none' : ''}`}
+      className={`column bg-zinc-100/70 dark:bg-[#121214] p-3 rounded-xl w-[84vw] max-w-[310px] sm:w-[280px] flex-shrink-0 snap-center sm:snap-align-none flex flex-col max-h-full border border-zinc-200/80 dark:border-zinc-800/80 ${isDeleting ? 'opacity-50 pointer-events-none' : ''}`}
     >
       <div className="flex justify-between items-center mb-3 px-1 group">
         <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -173,7 +173,7 @@ export const Column = ({ column, cards, onAddCard, onCardClick, onDelete, onRena
         <button 
           onClick={() => setIsConfirmOpen(true)}
           disabled={isDeleting}
-          className="text-zinc-400 hover:text-red-500 dark:hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50 ml-1 flex-shrink-0 min-w-[28px] min-h-[28px] flex items-center justify-center"
+          className="text-zinc-400 hover:text-red-500 dark:hover:text-red-400 opacity-80 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity disabled:opacity-50 ml-1 flex-shrink-0 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-lg hover:bg-zinc-200/60 dark:hover:bg-zinc-800"
           title="Delete column"
           aria-label={`Delete column ${column.name}`}
         >
@@ -218,15 +218,15 @@ export const Column = ({ column, cards, onAddCard, onCardClick, onDelete, onRena
               rows={2}
             />
             <div className="flex gap-2 items-center">
-              <button type="submit" className="bg-indigo-500 hover:bg-indigo-600 text-white px-3 py-1.5 text-xs font-medium rounded-md transition-colors min-h-[32px]">Add</button>
-              <button type="button" onClick={() => setIsAdding(false)} className="text-zinc-500 dark:text-zinc-400 text-xs hover:text-zinc-900 dark:hover:text-zinc-100 font-medium px-2 py-1.5 transition-colors min-h-[32px]">Cancel</button>
+              <button type="submit" className="bg-indigo-500 hover:bg-indigo-600 text-white px-3.5 py-2 text-xs font-medium rounded-lg transition-colors min-h-[40px]">Add</button>
+              <button type="button" onClick={() => setIsAdding(false)} className="text-zinc-600 dark:text-zinc-400 text-xs hover:text-zinc-900 dark:hover:text-zinc-100 font-medium px-3 py-2 transition-colors min-h-[40px]">Cancel</button>
             </div>
           </form>
         ) : (
           <button 
             onClick={() => setIsAdding(true)} 
             aria-label={`Add card to ${column.name}`}
-            className="w-full flex items-center gap-2 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/50 px-2 py-2 rounded-md text-sm font-medium transition-colors min-h-[36px]"
+            className="w-full flex items-center gap-2 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/50 px-2 py-2 rounded-lg text-sm font-medium transition-colors min-h-[40px]"
           >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
             Add card

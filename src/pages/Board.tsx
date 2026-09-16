@@ -14,7 +14,8 @@ import {
   DragOverlay,
   closestCorners,
   KeyboardSensor,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
@@ -88,9 +89,15 @@ export const Board = () => {
   }, [cards]);
 
   const sensors = useSensors(
-    useSensor(PointerSensor, {
+    useSensor(MouseSensor, {
       activationConstraint: {
-        distance: 5,
+        distance: 8,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 200, // 200ms press & hold on mobile to initiate drag without blocking scroll
+        tolerance: 6,
       },
     }),
     useSensor(KeyboardSensor, {
@@ -401,22 +408,30 @@ export const Board = () => {
       setCards((prev) => {
         const activeIndex = prev.findIndex((t) => t.id === activeId);
         const overIndex = prev.findIndex((t) => t.id === overId);
+        if (activeIndex === -1 || overIndex === -1) return prev;
 
+        let result: CardType[];
         if (prev[activeIndex].column_id !== prev[overIndex].column_id) {
           const newCards = [...prev];
           newCards[activeIndex].column_id = prev[overIndex].column_id;
-          return arrayMove(newCards, activeIndex, overIndex);
+          result = arrayMove(newCards, activeIndex, overIndex);
+        } else {
+          result = arrayMove(prev, activeIndex, overIndex);
         }
-        return arrayMove(prev, activeIndex, overIndex);
+        cardsRef.current = result;
+        return result;
       });
     }
 
     if (isActiveCard && isOverColumn) {
       setCards((prev) => {
         const activeIndex = prev.findIndex((t) => t.id === activeId);
+        if (activeIndex === -1) return prev;
         const newCards = [...prev];
         newCards[activeIndex].column_id = overId as string;
-        return arrayMove(newCards, activeIndex, activeIndex);
+        const result = arrayMove(newCards, activeIndex, activeIndex);
+        cardsRef.current = result;
+        return result;
       });
     }
   };
@@ -429,15 +444,18 @@ export const Board = () => {
     // Revert optimistic updates if dropped outside valid droppable
     if (!over) {
       setCards(initialCardsSnapshot.current);
+      cardsRef.current = initialCardsSnapshot.current;
       return;
     }
 
+    const currentCards = cardsRef.current;
     const activeId = active.id as string;
-    const activeCardData = cards.find(c => c.id === activeId);
+    const activeCardData = currentCards.find(c => c.id === activeId);
     
     // Guard against missing active card reference
     if (!activeCardData || !originalCard) {
       setCards(initialCardsSnapshot.current);
+      cardsRef.current = initialCardsSnapshot.current;
       return;
     }
 
@@ -445,7 +463,7 @@ export const Board = () => {
     const sourceColumnId = originalCard.column_id;
 
     let targetColumnId: string;
-    const overCard = cards.find(c => c.id === over.id);
+    const overCard = currentCards.find(c => c.id === over.id);
     if (overCard) {
       targetColumnId = overCard.column_id;
     } else {
@@ -463,10 +481,10 @@ export const Board = () => {
     const affectedColumnIds = new Set<string>([sourceColumnId, targetColumnId]);
 
     // Build the full list of updates: { id, position } for every card in affected columns
-    // We use the CURRENT cards state (which has already been mutated by onDragOver's optimistic updates)
+    // We use the synchronous cardsRef.current state
     const positionUpdates: { id: string; position: number; column_id: string }[] = [];
     for (const colId of affectedColumnIds) {
-      const positions = recomputePositions(cards, colId);
+      const positions = recomputePositions(currentCards, colId);
       for (const p of positions) {
         positionUpdates.push({ ...p, column_id: colId });
       }
@@ -578,7 +596,7 @@ export const Board = () => {
             />
           ) : (
             <h1
-              className="text-base sm:text-xl font-bold text-zinc-900 dark:text-zinc-100 tracking-tight cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors truncate max-w-[140px] sm:max-w-md py-1"
+              className="text-base sm:text-xl font-bold text-zinc-900 dark:text-zinc-100 tracking-tight cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors truncate max-w-[170px] sm:max-w-md py-1"
               onClick={() => { setTitleValue(board?.name || ''); setIsEditingTitle(true); }}
               title="Click to rename"
             >
@@ -611,9 +629,10 @@ export const Board = () => {
               }}
               className="sm:ml-3 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors bg-zinc-200/80 dark:bg-zinc-800/60 border border-zinc-300/80 dark:border-zinc-700/60 px-2.5 py-1.5 rounded active:scale-95 flex items-center gap-1 min-h-[36px]"
               aria-label="Share board invite link"
+              title="Share board"
             >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
-              <span>Share</span>
+              <span className="hidden sm:inline">Share</span>
             </button>
           </div>
 
@@ -658,8 +677,7 @@ export const Board = () => {
           onDragStart={onDragStart}
           onDragOver={onDragOver}
           onDragEnd={onDragEnd}
-        >
-          <div className="flex gap-3 sm:gap-4 items-start h-full pb-8">
+        >          <div className="flex gap-3 sm:gap-4 items-start h-full pb-8 snap-x snap-mandatory sm:snap-none">
             {columns.map(col => (
               <Column 
                 key={col.id} 
@@ -673,7 +691,7 @@ export const Board = () => {
             ))}
             
             {/* Add Column Button */}
-            <div className="bg-zinc-50/50 dark:bg-[#121214] p-3 rounded-xl w-[82vw] max-w-[300px] sm:w-[280px] flex-shrink-0 border border-dashed border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors">
+            <div className="bg-zinc-50/50 dark:bg-[#121214] p-3 rounded-xl w-[84vw] max-w-[310px] sm:w-[280px] flex-shrink-0 snap-center sm:snap-align-none border border-dashed border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors">
               {isAddingColumn ? (
                 <form onSubmit={handleAddColumn} className="flex flex-col gap-2">
                   <input
@@ -692,7 +710,7 @@ export const Board = () => {
                 </form>
               ) : (
                 <button 
-                  onClick={() => setIsAddingColumn(true)}
+                  onClick={() => setIsAddingColumn(true)} 
                   aria-label="Add new column"
                   className="w-full h-11 text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 text-sm font-medium flex items-center justify-center gap-2 transition-colors rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800/50"
                 >
@@ -705,8 +723,8 @@ export const Board = () => {
 
           <DragOverlay dropAnimation={null}>
             {activeCard ? (
-              <div className="bg-white dark:bg-[#18181b] p-3 rounded-lg shadow-xl border border-zinc-200 dark:border-zinc-700 opacity-90 cursor-grabbing rotate-2 transition-transform">
-                <div className="font-medium text-sm text-zinc-800 dark:text-zinc-200">{activeCard.title}</div>
+              <div className="bg-white dark:bg-[#18181b] p-3 rounded-lg shadow-2xl border-2 border-indigo-500 opacity-95 cursor-grabbing rotate-2 transition-transform scale-105 pointer-events-none">
+                <div className="font-medium text-sm text-zinc-900 dark:text-zinc-100">{activeCard.title}</div>
               </div>
             ) : null}
           </DragOverlay>

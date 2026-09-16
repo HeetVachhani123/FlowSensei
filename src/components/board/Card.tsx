@@ -29,9 +29,11 @@ export const Card = ({ card, onClick, isStuck }: CardProps) => {
     },
   });
 
-  const style = {
+  const style: React.CSSProperties = {
     transition,
     transform: CSS.Transform.toString(transform),
+    touchAction: isDragging ? 'none' : 'manipulation',
+    WebkitTouchCallout: 'none',
   };
 
   const isOverdue = card.due_date && new Date(card.due_date) < new Date(new Date().setHours(0, 0, 0, 0));
@@ -52,10 +54,10 @@ export const Card = ({ card, onClick, isStuck }: CardProps) => {
           onClick(card);
         }
       }}
-      className={`card
+      className={`card touch-manipulation select-none [-webkit-touch-callout:none]
         bg-white dark:bg-[#18181b] p-3 rounded-lg border border-zinc-200 dark:border-zinc-800/80
-        mb-2 cursor-pointer active:cursor-grabbing hover:border-zinc-300 dark:hover:border-zinc-600 transition-all active:scale-[0.99] select-none focus:outline-none focus:ring-2 focus:ring-indigo-500/50
-        ${isDragging ? 'opacity-50 ring-1 ring-zinc-400 dark:ring-zinc-600 shadow-xl' : ''}
+        mb-2 cursor-pointer active:cursor-grabbing hover:border-zinc-300 dark:hover:border-zinc-600 transition-all active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-indigo-500/50
+        ${isDragging ? 'opacity-50 ring-2 ring-indigo-500 shadow-2xl scale-105 z-50' : ''}
         ${isStuck ? 'border-l-4 border-l-amber-500 dark:border-l-amber-500' : ''}
       `}
     >
