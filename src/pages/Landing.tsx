@@ -69,46 +69,47 @@ export const Landing = () => {
           {/* INTERACTIVE PREVIEW TABS & PRODUCT SHOWCASE */}
           <div className="bg-white dark:bg-[#121214] rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-2xl p-3 sm:p-6 max-w-5xl mx-auto">
             {/* Tab switchers */}
-            <div className="flex items-center justify-center gap-2 mb-6 border-b border-zinc-100 dark:border-zinc-800/80 pb-4 overflow-x-auto">
+            <div className="flex items-center justify-start sm:justify-center gap-1.5 sm:gap-2 mb-4 sm:mb-6 border-b border-zinc-100 dark:border-zinc-800/80 pb-3 sm:pb-4 overflow-x-auto custom-scrollbar flex-nowrap">
               <button
                 onClick={() => setActiveTab('board')}
-                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 ${
+                className={`px-3.5 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all flex items-center gap-1.5 sm:gap-2 whitespace-nowrap shrink-0 ${
                   activeTab === 'board'
                     ? 'bg-indigo-500 text-white shadow-sm'
                     : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/50'
                 }`}
               >
-                <span className="font-mono text-xs opacity-75">01</span>
-                Live Kanban &amp; Bottlenecks
+                <span className="font-mono text-[10px] sm:text-xs opacity-75">01</span>
+                <span>Live Kanban</span>
+                <span className="hidden sm:inline">&amp; Bottlenecks</span>
               </button>
               <button
                 onClick={() => setActiveTab('retro')}
-                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 ${
+                className={`px-3.5 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all flex items-center gap-1.5 sm:gap-2 whitespace-nowrap shrink-0 ${
                   activeTab === 'retro'
                     ? 'bg-indigo-500 text-white shadow-sm'
                     : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/50'
                 }`}
               >
-                <span className="font-mono text-xs opacity-75">02</span>
-                AI Retrospectives
+                <span className="font-mono text-[10px] sm:text-xs opacity-75">02</span>
+                <span>AI Retrospectives</span>
               </button>
               <button
                 onClick={() => setActiveTab('dashboard')}
-                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 ${
+                className={`px-3.5 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all flex items-center gap-1.5 sm:gap-2 whitespace-nowrap shrink-0 ${
                   activeTab === 'dashboard'
                     ? 'bg-indigo-500 text-white shadow-sm'
                     : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/50'
                 }`}
               >
-                <span className="font-mono text-xs opacity-75">03</span>
-                Projects Dashboard
+                <span className="font-mono text-[10px] sm:text-xs opacity-75">03</span>
+                <span>Projects Dashboard</span>
               </button>
             </div>
 
             {/* Visual Screen Container */}
             <div className="relative rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-[#0c0c0d] shadow-inner">
               {activeTab === 'board' && (
-                <div className="relative w-full aspect-[16/9] max-h-[520px] overflow-hidden flex items-center justify-center">
+                <div className="relative w-full aspect-[4/3] sm:aspect-[16/9] min-h-[280px] sm:min-h-[420px] max-h-[520px] overflow-hidden flex items-center justify-center">
                   {/* Clean Anchored Teammate Presence Badges at top right */}
                   <div className="absolute top-2.5 right-28 z-20 hidden sm:flex items-center gap-2 bg-zinc-900/90 border border-zinc-800 px-2.5 py-1 rounded-full text-[11px] font-mono">
                     <span className="flex h-2 w-2 relative">
@@ -246,7 +247,7 @@ export const Landing = () => {
               )}
 
               {activeTab === 'retro' && (
-                <div className="relative w-full aspect-[16/9] max-h-[520px] overflow-hidden flex items-center justify-center p-4">
+                <div className="relative w-full aspect-[4/3] sm:aspect-[16/9] min-h-[280px] sm:min-h-[420px] max-h-[520px] overflow-hidden flex items-center justify-center p-2 sm:p-4">
                   <div className="w-full h-full rounded-lg bg-[#121214] border border-zinc-800 flex overflow-hidden text-left">
                     {/* Retro Sidebar */}
                     <div className="w-48 bg-[#0c0c0d] border-r border-zinc-800 p-3 hidden sm:flex flex-col">
@@ -265,11 +266,11 @@ export const Landing = () => {
                     </div>
 
                     {/* Retro Markdown Preview */}
-                    <div className="flex-1 p-6 overflow-y-auto font-sans">
+                    <div className="flex-1 p-3 sm:p-6 overflow-y-auto font-sans">
                       <div className="flex items-center justify-between pb-3 mb-4 border-b border-zinc-800">
                         <div>
-                          <h3 className="text-lg font-bold text-white">Sprint 14 Retrospective — Core Platform &amp; AI Flow</h3>
-                          <p className="text-xs font-mono text-zinc-400 mt-0.5">Model: openai/gpt-oss-120b via Groq Edge Function</p>
+                          <h3 className="text-base sm:text-lg font-bold text-white">Sprint 14 Retrospective — Core Platform &amp; AI Flow</h3>
+                          <p className="text-[11px] sm:text-xs font-mono text-zinc-400 mt-0.5">Model: openai/gpt-oss-120b via Groq Edge Function</p>
                         </div>
                         <span className="px-2.5 py-1 rounded-md bg-emerald-950/70 border border-emerald-800/80 text-emerald-300 text-xs font-mono font-semibold">
                           Health: 88%
@@ -310,7 +311,7 @@ export const Landing = () => {
               )}
 
               {activeTab === 'dashboard' && (
-                <div className="relative w-full aspect-[16/9] max-h-[520px] overflow-hidden flex items-center justify-center p-4">
+                <div className="relative w-full aspect-[4/3] sm:aspect-[16/9] min-h-[280px] sm:min-h-[420px] max-h-[520px] overflow-hidden flex items-center justify-center p-2 sm:p-4">
                   <div className="w-full h-full rounded-lg bg-[#121214] border border-zinc-800 p-6 flex flex-col justify-between text-left">
                     <div>
                       <div className="flex justify-between items-center pb-4 border-b border-zinc-800 mb-6">
