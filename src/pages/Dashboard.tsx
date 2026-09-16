@@ -15,6 +15,7 @@ type Board = {
 // Aggregated column & task count metadata per board
 type BoardMeta = {
   columnCount: number;
+  cardCount: number;
 };
 
 export const Dashboard = () => {
@@ -33,6 +34,9 @@ export const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Check if standard engineering demo board is already loaded
+  const demoBoard = boards.find(b => b.name === 'Sprint 14 — Core Platform & AI Flow');
+
   useEffect(() => {
     fetchBoards();
   }, []);
@@ -49,7 +53,7 @@ export const Dashboard = () => {
       const loadedBoards = data || [];
       setBoards(loadedBoards);
 
-      // Fetch column counts for all boards in a single query
+      // Fetch columns and cards for all boards in single batch queries
       if (loadedBoards.length > 0) {
         const { data: colData } = await supabase
           .from('columns')
@@ -57,23 +61,34 @@ export const Dashboard = () => {
           .in('board_id', loadedBoards.map(b => b.id));
 
         const columnList = colData || [];
+        const colToBoardMap: Record<string, string> = {};
+        columnList.forEach(c => { colToBoardMap[c.id] = c.board_id; });
+
         const counts: Record<string, BoardMeta> = {};
-        loadedBoards.forEach(b => { counts[b.id] = { columnCount: 0 }; });
+        loadedBoards.forEach(b => { counts[b.id] = { columnCount: 0, cardCount: 0 }; });
         columnList.forEach(c => {
           if (counts[c.board_id]) counts[c.board_id].columnCount++;
         });
-        setBoardMeta(counts);
 
-        // Fetch total cards count across the user's columns
+        // Fetch cards to count total cards and compute cards per board
         if (columnList.length > 0) {
-          const { count } = await supabase
+          const { data: cardData } = await supabase
             .from('cards')
-            .select('id', { count: 'exact', head: true })
+            .select('id, column_id')
             .in('column_id', columnList.map(c => c.id));
-          setTotalCardsCount(count || 0);
+
+          const cardsList = cardData || [];
+          setTotalCardsCount(cardsList.length);
+          cardsList.forEach(card => {
+            const bId = colToBoardMap[card.column_id];
+            if (bId && counts[bId]) {
+              counts[bId].cardCount++;
+            }
+          });
         } else {
           setTotalCardsCount(0);
         }
+        setBoardMeta(counts);
       } else {
         setTotalCardsCount(0);
       }
@@ -126,12 +141,25 @@ export const Dashboard = () => {
   };
 
   const handleSeedDemoBoard = async () => {
+    // If demo board already exists in state, immediately navigate without hitting network
+    if (demoBoard) {
+      toast({
+        title: 'Demo board active',
+        description: 'Opening your existing "Sprint 14 — Core Platform & AI Flow" board.',
+        variant: 'success'
+      });
+      navigate(`/board/${demoBoard.id}`);
+      return;
+    }
+
     try {
       setSeedingDemo(true);
       const result = await seedDemoBoard();
       toast({
-        title: 'Demo board ready',
-        description: 'Loaded "Sprint 14 — Core Platform & AI Flow" with sample cards.',
+        title: result.isExisting ? 'Demo board active' : 'Demo board ready',
+        description: result.isExisting 
+          ? 'Opening your existing "Sprint 14 — Core Platform & AI Flow" board.'
+          : 'Loaded "Sprint 14 — Core Platform & AI Flow" with sample cards.',
         variant: 'success'
       });
       navigate(`/board/${result.boardId}`);
@@ -209,53 +237,62 @@ export const Dashboard = () => {
             onClick={handleSeedDemoBoard}
             disabled={seedingDemo}
             className="px-3.5 py-2 text-xs font-semibold rounded-lg border border-indigo-200 dark:border-indigo-800/80 bg-indigo-50/50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100/70 dark:hover:bg-indigo-900/50 transition-all active:scale-[0.98] flex items-center gap-2"
-            title="Populate a clean, realistic engineering demo board"
+            title={demoBoard ? 'Open standard engineering demo board' : 'Populate a clean, realistic engineering demo board'}
           >
             {seedingDemo ? (
               <div className="w-3.5 h-3.5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+            ) : demoBoard ? (
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
             ) : (
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
             )}
-            <span>{seedingDemo ? 'Seeding workspace...' : 'Load Sample Demo Board'}</span>
+            <span>
+              {seedingDemo 
+                ? 'Seeding workspace...' 
+                : demoBoard 
+                ? 'Open Sample Demo Board' 
+                : 'Load Sample Demo Board'}
+            </span>
           </button>
         </div>
       </div>
 
       {/* STATS / SUMMARY ROW */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-        <div className="p-4 rounded-xl bg-white dark:bg-[#121214] border border-zinc-200 dark:border-zinc-800/80 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-[11px] font-mono uppercase tracking-wider text-zinc-600 dark:text-zinc-400 font-bold mb-1">Active Boards</p>
-            <p className="text-2xl font-extrabold text-zinc-900 dark:text-white font-mono">
+      <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-6 sm:mb-8">
+        <div className="p-3 sm:p-4 rounded-xl bg-white dark:bg-[#121214] border border-zinc-200 dark:border-zinc-800/80 shadow-sm flex items-center justify-between min-w-0">
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] sm:text-[11px] font-mono uppercase tracking-wider text-zinc-600 dark:text-zinc-400 font-bold mb-0.5 sm:mb-1 truncate">Active Boards</p>
+            <p className="text-xl sm:text-2xl font-extrabold text-zinc-900 dark:text-white font-mono">
               {loading ? '—' : boards.length}
             </p>
           </div>
-          <div className="w-10 h-10 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/60 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+          <div className="hidden sm:flex w-10 h-10 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/60 items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0 ml-2">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" /></svg>
           </div>
         </div>
 
-        <div className="p-4 rounded-xl bg-white dark:bg-[#121214] border border-zinc-200 dark:border-zinc-800/80 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-[11px] font-mono uppercase tracking-wider text-zinc-600 dark:text-zinc-400 font-bold mb-1">Total Tracked Tasks</p>
-            <p className="text-2xl font-extrabold text-zinc-900 dark:text-white font-mono">
+        <div className="p-3 sm:p-4 rounded-xl bg-white dark:bg-[#121214] border border-zinc-200 dark:border-zinc-800/80 shadow-sm flex items-center justify-between min-w-0">
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] sm:text-[11px] font-mono uppercase tracking-wider text-zinc-600 dark:text-zinc-400 font-bold mb-0.5 sm:mb-1 truncate">Tracked Tasks</p>
+            <p className="text-xl sm:text-2xl font-extrabold text-zinc-900 dark:text-white font-mono">
               {loading ? '—' : totalCardsCount}
             </p>
           </div>
-          <div className="w-10 h-10 rounded-lg bg-purple-50 dark:bg-purple-950/40 border border-purple-100 dark:border-purple-900/60 flex items-center justify-center text-purple-600 dark:text-purple-400">
+          <div className="hidden sm:flex w-10 h-10 rounded-lg bg-purple-50 dark:bg-purple-950/40 border border-purple-100 dark:border-purple-900/60 items-center justify-center text-purple-600 dark:text-purple-400 shrink-0 ml-2">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
           </div>
         </div>
 
-        <div className="p-4 rounded-xl bg-white dark:bg-[#121214] border border-zinc-200 dark:border-zinc-800/80 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-[11px] font-mono uppercase tracking-wider text-zinc-600 dark:text-zinc-400 font-bold mb-1">AI Sensei & Realtime</p>
-            <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 mt-1">
-              <span className="w-2 h-2 rounded-full bg-emerald-500" />
-              Online & Ready
+        <div className="p-3 sm:p-4 rounded-xl bg-white dark:bg-[#121214] border border-zinc-200 dark:border-zinc-800/80 shadow-sm flex items-center justify-between min-w-0">
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] sm:text-[11px] font-mono uppercase tracking-wider text-zinc-600 dark:text-zinc-400 font-bold mb-0.5 sm:mb-1 truncate">AI Sensei</p>
+            <p className="text-xs sm:text-sm font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 mt-1 sm:mt-1 truncate">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+              <span className="truncate">Online</span>
+              <span className="hidden sm:inline">&amp; Ready</span>
             </p>
           </div>
-          <div className="w-10 h-10 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-900/60 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+          <div className="hidden sm:flex w-10 h-10 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-900/60 items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0 ml-2">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
           </div>
         </div>
@@ -365,13 +402,20 @@ export const Dashboard = () => {
                   className="board-card-premium group flex flex-col justify-between bg-white dark:bg-[#121214] p-5 rounded-xl border border-zinc-200 dark:border-zinc-800/80 cursor-pointer h-36 relative overflow-hidden"
                 >
                   <div className="flex justify-between items-start">
-                    <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 text-sm pr-6 line-clamp-2">{board.name}</h3>
+                    <div className="pr-10 min-w-0">
+                      <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 text-sm line-clamp-1">{board.name}</h3>
+                      {meta && meta.cardCount === 0 && (
+                        <span className="inline-block text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800/80 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700/60 mt-1" title="Board currently has 0 cards">
+                          Empty • 0 cards
+                        </span>
+                      )}
+                    </div>
                     <button 
                       onClick={(e) => handleDeleteClick(e, board.id, board.name)}
                       disabled={deleting && boardToDelete?.id === board.id}
-                      className="absolute top-4 right-4 text-zinc-400 hover:text-red-500 dark:hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                      className="absolute top-2.5 right-2.5 text-zinc-400 hover:text-red-500 dark:hover:text-red-400 opacity-80 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity min-w-[40px] min-h-[40px] flex items-center justify-center rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 focus:opacity-100 focus:outline-none"
                       title="Delete board"
-                      aria-label="Delete board"
+                      aria-label={`Delete board ${board.name}`}
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                     </button>
@@ -384,6 +428,11 @@ export const Dashboard = () => {
                         <span className="flex items-center gap-1 font-medium">
                           <svg className="w-3 h-3 text-zinc-400 dark:text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" /></svg>
                           {meta.columnCount} {meta.columnCount === 1 ? 'col' : 'cols'}
+                        </span>
+                      )}
+                      {meta && meta.cardCount > 0 && (
+                        <span className="font-medium hidden sm:inline">
+                          {meta.cardCount} {meta.cardCount === 1 ? 'task' : 'tasks'}
                         </span>
                       )}
                       <span className="font-medium">{relativeDate(board.created_at)}</span>

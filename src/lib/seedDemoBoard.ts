@@ -3,11 +3,13 @@ import { supabase } from './supabaseClient';
 export interface SeedBoardResult {
   boardId: string;
   name: string;
+  isExisting?: boolean;
 }
 
 /**
  * Creates a clean, realistic engineering demo board for the authenticated user.
  * Avoids personal data and demonstrates real-world product/engineering tasks.
+ * If a demo board already exists for this user, it returns the existing board to prevent duplicates.
  */
 export async function seedDemoBoard(): Promise<SeedBoardResult> {
   const { data: userData } = await supabase.auth.getUser();
@@ -16,8 +18,25 @@ export async function seedDemoBoard(): Promise<SeedBoardResult> {
   }
 
   const userId = userData.user.id;
-  const boardId = crypto.randomUUID();
   const boardName = 'Sprint 14 — Core Platform & AI Flow';
+
+  // 0. Check if demo board already exists for this user
+  const { data: existingBoard } = await supabase
+    .from('boards')
+    .select('id, name')
+    .eq('name', boardName)
+    .eq('created_by', userId)
+    .maybeSingle();
+
+  if (existingBoard) {
+    return {
+      boardId: existingBoard.id,
+      name: existingBoard.name,
+      isExisting: true,
+    };
+  }
+
+  const boardId = crypto.randomUUID();
 
   // 1. Create Board
   const { error: boardError } = await supabase
