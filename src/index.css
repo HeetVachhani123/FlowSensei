@@ -184,47 +184,47 @@ body {
   animation: backdrop-fade 0.2s ease-out both;
 }
 
-/* Multiplayer Cursor Animations for Showcase (cleanly anchored in card areas) */
-@keyframes cursor-wander-1 {
+/* Multiplayer Cursor Animations for Showcase (rendered in native SVG viewBox coordinate space) */
+@keyframes svg-cursor-wander-1 {
   0% {
-    transform: translate(130px, 140px);
+    transform: translate(270px, 260px);
   }
   25% {
-    transform: translate(260px, 170px);
+    transform: translate(340px, 295px);
   }
   50% {
-    transform: translate(320px, 240px);
+    transform: translate(440px, 265px);
   }
   75% {
-    transform: translate(170px, 210px);
+    transform: translate(380px, 320px);
   }
   100% {
-    transform: translate(130px, 140px);
+    transform: translate(270px, 260px);
   }
 }
 
-@keyframes cursor-wander-2 {
+@keyframes svg-cursor-wander-2 {
   0% {
-    transform: translate(520px, 230px);
+    transform: translate(500px, 270px);
   }
   30% {
-    transform: translate(640px, 150px);
+    transform: translate(650px, 255px);
   }
   60% {
-    transform: translate(490px, 180px);
+    transform: translate(700px, 305px);
   }
   85% {
-    transform: translate(600px, 250px);
+    transform: translate(580px, 320px);
   }
   100% {
-    transform: translate(520px, 230px);
+    transform: translate(500px, 270px);
   }
 }
 
-.animate-cursor-1 {
-  animation: cursor-wander-1 12s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+.landing-svg-cursor-1 {
+  animation: svg-cursor-wander-1 12s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
 }
 
-.animate-cursor-2 {
-  animation: cursor-wander-2 15s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+.landing-svg-cursor-2 {
+  animation: svg-cursor-wander-2 15s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
 }

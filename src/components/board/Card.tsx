@@ -1,6 +1,6 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { LABEL_CONFIG } from '../../lib/labelConfig';
+import { getLabelConfig } from '../../lib/labelConfig';
 
 export type CardType = {
   id: string;
@@ -64,7 +64,7 @@ export const Card = ({ card, onClick, isStuck }: CardProps) => {
       {card.labels && card.labels.length > 0 && (
         <div className="flex flex-wrap gap-1 mb-2">
           {card.labels.map(label => {
-            const cfg = LABEL_CONFIG[label];
+            const cfg = getLabelConfig(label);
             return cfg ? (
               <span
                 key={label}

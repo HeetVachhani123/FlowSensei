@@ -68,6 +68,50 @@ export const LABEL_CONFIG: Record<string, LabelConfig> = {
     border: 'border-emerald-200 dark:border-emerald-800/80',
     activeBorder: 'border-emerald-600 dark:border-emerald-500',
   },
+  'Documentation': {
+    bg: 'bg-amber-50 dark:bg-amber-950/40',
+    text: 'text-amber-800 dark:text-amber-300',
+    activeBg: 'bg-amber-600 dark:bg-amber-500',
+    activeText: 'text-white',
+    border: 'border-amber-200 dark:border-amber-800/80',
+    activeBorder: 'border-amber-600 dark:border-amber-500',
+  },
+  'Security': {
+    bg: 'bg-rose-50 dark:bg-rose-950/40',
+    text: 'text-rose-800 dark:text-rose-300',
+    activeBg: 'bg-rose-600 dark:bg-rose-500',
+    activeText: 'text-white',
+    border: 'border-rose-200 dark:border-rose-800/80',
+    activeBorder: 'border-rose-600 dark:border-rose-500',
+  },
+  'Performance': {
+    bg: 'bg-indigo-50 dark:bg-indigo-950/40',
+    text: 'text-indigo-800 dark:text-indigo-300',
+    activeBg: 'bg-indigo-600 dark:bg-indigo-500',
+    activeText: 'text-white',
+    border: 'border-indigo-200 dark:border-indigo-800/80',
+    activeBorder: 'border-indigo-600 dark:border-indigo-500',
+  },
+  'Testing': {
+    bg: 'bg-teal-50 dark:bg-teal-950/40',
+    text: 'text-teal-800 dark:text-teal-300',
+    activeBg: 'bg-teal-600 dark:bg-teal-500',
+    activeText: 'text-white',
+    border: 'border-teal-200 dark:border-teal-800/80',
+    activeBorder: 'border-teal-600 dark:border-teal-500',
+  },
 };
 
 export const PREDEFINED_LABELS = Object.keys(LABEL_CONFIG);
+
+/**
+ * Robust case-insensitive label configuration lookup.
+ * Ensures labels matching case or lowercase (e.g. 'bug' -> 'Bug') resolve to their intended color tokens.
+ */
+export function getLabelConfig(label: string): LabelConfig | undefined {
+  if (!label) return undefined;
+  if (LABEL_CONFIG[label]) return LABEL_CONFIG[label];
+  const lower = label.toLowerCase();
+  const key = Object.keys(LABEL_CONFIG).find(k => k.toLowerCase() === lower);
+  return key ? LABEL_CONFIG[key] : undefined;
+}

@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient';
+import { LABEL_CONFIG } from './labelConfig';
 
 export interface SeedBoardResult {
   boardId: string;
@@ -29,6 +30,36 @@ export async function seedDemoBoard(): Promise<SeedBoardResult> {
     .maybeSingle();
 
   if (existingBoard) {
+    // Migrate any legacy lowercase labels on existing demo board so they render with full color coding
+    try {
+      const { data: cols } = await supabase
+        .from('columns')
+        .select('id')
+        .eq('board_id', existingBoard.id);
+      if (cols && cols.length > 0) {
+        const colIds = cols.map(c => c.id);
+        const { data: existingCards } = await supabase
+          .from('cards')
+          .select('id, labels')
+          .in('column_id', colIds);
+        if (existingCards) {
+          for (const card of existingCards) {
+            if (card.labels && card.labels.length > 0) {
+              const updated = card.labels.map((l: string) => {
+                const found = Object.keys(LABEL_CONFIG).find(k => k.toLowerCase() === l.toLowerCase());
+                return found || l;
+              });
+              if (JSON.stringify(updated) !== JSON.stringify(card.labels)) {
+                await supabase.from('cards').update({ labels: updated }).eq('id', card.id);
+              }
+            }
+          }
+        }
+      }
+    } catch {
+      // Non-blocking fallback; getLabelConfig case-insensitivity also resolves on display
+    }
+
     return {
       boardId: existingBoard.id,
       name: existingBoard.name,
@@ -87,7 +118,7 @@ export async function seedDemoBoard(): Promise<SeedBoardResult> {
       title: 'Design empty-state illustrations',
       description: 'Create clean SVG empty states for zero-board dashboard and empty retro reports to enhance onboarding.',
       position: 0,
-      labels: ['design', 'feature'],
+      labels: ['Design', 'Feature'],
       due_date: addDays(5),
       created_at: subDays(2),
       updated_at: subDays(2),
@@ -98,7 +129,7 @@ export async function seedDemoBoard(): Promise<SeedBoardResult> {
       title: 'Write onboarding tour copy',
       description: 'Draft step-by-step tooltip guide copy highlighting real-time cursor sync and AI retro generation.',
       position: 1,
-      labels: ['documentation', 'enhancement'],
+      labels: ['Documentation', 'Enhancement'],
       due_date: addDays(7),
       created_at: subDays(2),
       updated_at: subDays(2),
@@ -109,7 +140,7 @@ export async function seedDemoBoard(): Promise<SeedBoardResult> {
       title: 'Audit mobile touch targets',
       description: 'Verify all clickable header elements and column action buttons meet the WCAG 44x44px minimum touch target size.',
       position: 2,
-      labels: ['enhancement'],
+      labels: ['Enhancement'],
       due_date: addDays(10),
       created_at: subDays(1),
       updated_at: subDays(1),
@@ -121,7 +152,7 @@ export async function seedDemoBoard(): Promise<SeedBoardResult> {
       title: 'Fix Safari drag ghost image',
       description: 'Resolve Safari WebKit ghost-drag opacity bug during rapid multi-touch card repositioning.',
       position: 0,
-      labels: ['bug'],
+      labels: ['Bug'],
       due_date: addDays(1),
       created_at: subDays(4),
       updated_at: subDays(4), // intentionally older to showcase bottleneck detection
@@ -132,7 +163,7 @@ export async function seedDemoBoard(): Promise<SeedBoardResult> {
       title: 'Add rate limiting to retro endpoint',
       description: 'Implement 5-second client-side throttle cooldown and Edge Function token rate-limiting to prevent Groq API abuse.',
       position: 1,
-      labels: ['feature', 'security'],
+      labels: ['Feature', 'Security'],
       due_date: addDays(2),
       created_at: subDays(3),
       updated_at: subDays(3),
@@ -143,7 +174,7 @@ export async function seedDemoBoard(): Promise<SeedBoardResult> {
       title: 'Optimize card reorder latency',
       description: 'Batch optimistic array reordering before broadcasting PostgreSQL change events via Supabase WebSockets.',
       position: 2,
-      labels: ['performance', 'enhancement'],
+      labels: ['Performance', 'Enhancement'],
       due_date: addDays(3),
       created_at: subDays(2),
       updated_at: subDays(2),
@@ -155,7 +186,7 @@ export async function seedDemoBoard(): Promise<SeedBoardResult> {
       title: 'Design system token migration',
       description: 'Migrate ad-hoc hex colors across modals and inputs into standardized Tailwind CSS color variables.',
       position: 0,
-      labels: ['design', 'enhancement'],
+      labels: ['Design', 'Enhancement'],
       due_date: addDays(1),
       created_at: subDays(3),
       updated_at: subDays(1),
@@ -166,7 +197,7 @@ export async function seedDemoBoard(): Promise<SeedBoardResult> {
       title: 'Supabase edge function error logging',
       description: 'Add structured JSON logging with request IDs to the generate-retro Deno function.',
       position: 1,
-      labels: ['feature'],
+      labels: ['Feature'],
       due_date: addDays(2),
       created_at: subDays(2),
       updated_at: subDays(1),
@@ -178,7 +209,7 @@ export async function seedDemoBoard(): Promise<SeedBoardResult> {
       title: 'Implement dark mode theme switch',
       description: 'Added unified dark mode toggle with CSS variable syncing across navbar, canvas, and modals.',
       position: 0,
-      labels: ['feature', 'design'],
+      labels: ['Feature', 'Design'],
       due_date: subDays(1),
       created_at: subDays(5),
       updated_at: subDays(1),
@@ -189,7 +220,7 @@ export async function seedDemoBoard(): Promise<SeedBoardResult> {
       title: 'Set up Vitest testing suite',
       description: 'Integrated Vitest, JSDOM, and Testing Library with unit tests for board logic, auth guards, and AI retros.',
       position: 1,
-      labels: ['testing'],
+      labels: ['Testing'],
       due_date: subDays(2),
       created_at: subDays(4),
       updated_at: subDays(2),
@@ -200,7 +231,7 @@ export async function seedDemoBoard(): Promise<SeedBoardResult> {
       title: 'Add optimistic UI card drop',
       description: 'Instant local DOM updates during dnd-kit drop events to eliminate perceived network roundtrip lag.',
       position: 2,
-      labels: ['feature', 'performance'],
+      labels: ['Feature', 'Performance'],
       due_date: subDays(3),
       created_at: subDays(6),
       updated_at: subDays(2),

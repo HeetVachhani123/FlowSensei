@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { TeammateCursor } from '../components/TeammateCursor';
 
 export const Landing = () => {
   const navigate = useNavigate();
@@ -121,18 +120,6 @@ export const Landing = () => {
                     <span className="px-1.5 py-0.2 rounded bg-emerald-950 text-emerald-300 border border-emerald-800/60 font-semibold">User-2</span>
                   </div>
 
-                  {/* Teammate Cursors wandering inside card areas (safely below headers) */}
-                  <TeammateCursor
-                    name="User-1"
-                    color="#6366f1"
-                    className="animate-cursor-1 top-0 left-0"
-                  />
-                  <TeammateCursor
-                    name="User-2"
-                    color="#10b981"
-                    className="animate-cursor-2 top-0 left-0"
-                  />
-
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400" className="w-full h-full object-contain">
                     <defs>
                       <linearGradient id="landing-bg2" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -241,6 +228,35 @@ export const Landing = () => {
                       <text x="23" y="123" fontFamily="JetBrains Mono,monospace" fontSize="8" fontWeight="600" fill="#6ee7b7">TESTING</text>
                       <text x="18" y="144" fontFamily="Outfit,sans-serif" fontSize="11" fontWeight="600" fill="#e4e4e7">Vitest unit test suite</text>
                       <text x="18" y="158" fontFamily="JetBrains Mono,monospace" fontSize="9" fill="#10b981">✓ 9/9 passing</text>
+                    </g>
+
+                    {/* Live Collaborator Cursors rendered in native SVG coordinate space — never overlaps card text */}
+                    <g className="landing-svg-cursor-1 pointer-events-none select-none">
+                      <path
+                        d="M5.65 12.37H5.46L5.32 12.5L0.5 16.88V1.2L11.78 12.37H5.65Z"
+                        fill="#6366f1"
+                        stroke="#ffffff"
+                        strokeWidth="1.2"
+                        filter="drop-shadow(0 1px 2px rgba(0,0,0,0.5))"
+                      />
+                      <g transform="translate(10, 8)">
+                        <rect width="46" height="18" rx="9" fill="#6366f1" filter="drop-shadow(0 1px 3px rgba(0,0,0,0.4))" />
+                        <text x="23" y="12.5" fontFamily="Outfit,sans-serif" fontSize="9" fontWeight="700" fill="#ffffff" textAnchor="middle">User-1</text>
+                      </g>
+                    </g>
+
+                    <g className="landing-svg-cursor-2 pointer-events-none select-none">
+                      <path
+                        d="M5.65 12.37H5.46L5.32 12.5L0.5 16.88V1.2L11.78 12.37H5.65Z"
+                        fill="#10b981"
+                        stroke="#ffffff"
+                        strokeWidth="1.2"
+                        filter="drop-shadow(0 1px 2px rgba(0,0,0,0.5))"
+                      />
+                      <g transform="translate(10, 8)">
+                        <rect width="46" height="18" rx="9" fill="#10b981" filter="drop-shadow(0 1px 3px rgba(0,0,0,0.4))" />
+                        <text x="23" y="12.5" fontFamily="Outfit,sans-serif" fontSize="9" fontWeight="700" fill="#ffffff" textAnchor="middle">User-2</text>
+                      </g>
                     </g>
                   </svg>
                 </div>
