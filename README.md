@@ -53,14 +53,17 @@ The "Sensei" feature leverages a **Supabase Edge Function** (`generate-retro`) w
 
 When triggered, the Edge Function queries the current state of the board, maps the data into a token-efficient format, and prompts Groq's `openai/gpt-oss-120b` model to analyze the workflow. The Edge Function streams back a structured Markdown report highlighting stalled tasks, workload imbalances, and recommended action items. Moving this logic to an Edge Function keeps API keys secure and offloads heavy processing from the client.
 
-<!-- Note: Add real screenshots here before sharing — capture clean demo board pages: dashboard, board, and AI retro modal -->
 ## Screenshots
 
-<!-- screenshot: dashboard.png -->
+### 📊 Projects Dashboard
+![Projects Dashboard](public/dashboard.png)
 
-<!-- screenshot: board.png -->
+### 📋 Live Kanban Board & Flow Bottlenecks
+![Kanban Board](public/board.png)
 
-<!-- screenshot: retro-modal.png -->
+### 🤖 AI Retrospective Report
+![AI Retrospective](public/retro-modal.png)
+
 
 ## Local Setup
 
