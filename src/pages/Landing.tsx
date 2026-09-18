@@ -21,7 +21,7 @@ export const Landing = () => {
       
       {/* Ambient gradient glow */}
       <div className="relative overflow-hidden pt-24 pb-16">
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[380px] bg-gradient-to-tr from-indigo-600/20 via-purple-500/15 to-transparent blur-[120px] pointer-events-none rounded-full" />
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[520px] h-[300px] bg-gradient-to-tr from-purple-400/50 via-indigo-400/45 to-fuchsia-300/35 dark:from-indigo-600/20 dark:via-purple-500/15 blur-[60px] sm:blur-[75px] pointer-events-none rounded-full" />
         
         {/* HERO SECTION */}
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
@@ -109,17 +109,6 @@ export const Landing = () => {
             <div className="relative rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-[#0c0c0d] shadow-inner">
               {activeTab === 'board' && (
                 <div className="relative w-full aspect-[4/3] sm:aspect-[16/9] min-h-[280px] sm:min-h-[420px] max-h-[520px] overflow-hidden flex items-center justify-center">
-                  {/* Clean Anchored Teammate Presence Badges at top right */}
-                  <div className="absolute top-2.5 right-28 z-20 hidden sm:flex items-center gap-2 bg-zinc-900/90 border border-zinc-800 px-2.5 py-1 rounded-full text-[11px] font-mono">
-                    <span className="flex h-2 w-2 relative">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-                    </span>
-                    <span className="text-zinc-300">2 active peers</span>
-                    <span className="px-1.5 py-0.2 rounded bg-indigo-950 text-indigo-300 border border-indigo-800/60 font-semibold">User-1</span>
-                    <span className="px-1.5 py-0.2 rounded bg-emerald-950 text-emerald-300 border border-emerald-800/60 font-semibold">User-2</span>
-                  </div>
-
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400" className="w-full h-full object-contain">
                     <defs>
                       <linearGradient id="landing-bg2" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -132,6 +121,20 @@ export const Landing = () => {
                     <rect x="0" y="0" width="800" height="40" fill="#0c0c0d" stroke="#27272a" />
                     <text x="40" y="25" fontFamily="Outfit,sans-serif" fontSize="13" fontWeight="700" fill="#fafafa">Sprint 14 — Core Platform &amp; AI Flow</text>
                     
+                    {/* Teammate Presence Badge cleanly anchored in SVG header without overlapping AI Retro */}
+                    <g transform="translate(425, 8.5)">
+                      <rect width="235" height="23" rx="11.5" fill="#121214" stroke="#27272a" />
+                      <circle cx="14" cy="11.5" r="3.5" fill="#10b981" />
+                      <circle cx="14" cy="11.5" r="6" fill="#10b981" opacity="0.25" />
+                      <text x="25" y="15" fontFamily="JetBrains Mono,monospace" fontSize="10" fill="#d4d4d8">2 active peers</text>
+                      
+                      <rect x="122" y="3.5" width="50" height="16" rx="4" fill="#1e1b4b" stroke="#3730a3" />
+                      <text x="147" y="15" fontFamily="JetBrains Mono,monospace" fontSize="9" fontWeight="700" fill="#a5b4fc" textAnchor="middle">User-1</text>
+                      
+                      <rect x="178" y="3.5" width="50" height="16" rx="4" fill="#064e3b" stroke="#065f46" />
+                      <text x="203" y="15" fontFamily="JetBrains Mono,monospace" fontSize="9" fontWeight="700" fill="#6ee7b7" textAnchor="middle">User-2</text>
+                    </g>
+
                     {/* Retro Button */}
                     <rect x="680" y="9" width="94" height="23" rx="6" fill="#4f46e5" />
                     <text x="702" y="24" fontFamily="Outfit,sans-serif" fontSize="11" fontWeight="600" fill="#fafafa">✨ AI Retro</text>
@@ -170,9 +173,8 @@ export const Landing = () => {
                       <text x="14" y="24" fontFamily="Outfit,sans-serif" fontSize="12" fontWeight="700" fill="#e4e4e7">In Progress</text>
                       <text x="146" y="24" fontFamily="JetBrains Mono,monospace" fontSize="11" fontWeight="600" fill="#a1a1aa">2</text>
                       
-                      {/* Card with Bottleneck Indicator */}
+                      {/* Card with Bottleneck Indicator — cleanly styled rounded border */}
                       <rect x="10" y="36" width="150" height="74" rx="8" fill="#18181b" stroke="#f59e0b" strokeWidth="1.5" />
-                      <rect x="10" y="36" width="4" height="74" fill="#f59e0b" />
                       <rect x="18" y="44" width="34" height="12" rx="3" fill="#ef444420" stroke="#ef444460" />
                       <text x="24" y="53" fontFamily="JetBrains Mono,monospace" fontSize="8" fontWeight="700" fill="#fca5a5">BUG</text>
                       
@@ -263,7 +265,7 @@ export const Landing = () => {
               )}
 
               {activeTab === 'retro' && (
-                <div className="relative w-full aspect-[4/3] sm:aspect-[16/9] min-h-[280px] sm:min-h-[420px] max-h-[520px] overflow-hidden flex items-center justify-center p-2 sm:p-4">
+                <div className="relative w-full min-h-[360px] sm:min-h-[420px] sm:aspect-[16/9] max-h-[560px] overflow-hidden flex items-center justify-center p-2 sm:p-4">
                   <div className="w-full h-full rounded-lg bg-[#121214] border border-zinc-800 flex overflow-hidden text-left">
                     {/* Retro Sidebar */}
                     <div className="w-48 bg-[#0c0c0d] border-r border-zinc-800 p-3 hidden sm:flex flex-col">
@@ -327,39 +329,54 @@ export const Landing = () => {
               )}
 
               {activeTab === 'dashboard' && (
-                <div className="relative w-full aspect-[4/3] sm:aspect-[16/9] min-h-[280px] sm:min-h-[420px] max-h-[520px] overflow-hidden flex items-center justify-center p-2 sm:p-4">
-                  <div className="w-full h-full rounded-lg bg-[#121214] border border-zinc-800 p-6 flex flex-col justify-between text-left">
+                <div className="relative w-full min-h-[360px] sm:min-h-[420px] sm:aspect-[16/9] max-h-[560px] overflow-hidden flex items-center justify-center p-2 sm:p-4">
+                  <div className="w-full h-full rounded-lg bg-[#121214] border border-zinc-800 p-3.5 sm:p-6 flex flex-col justify-between text-left overflow-y-auto custom-scrollbar">
                     <div>
-                      <div className="flex justify-between items-center pb-4 border-b border-zinc-800 mb-6">
+                      <div className="flex justify-between items-center pb-3 sm:pb-4 border-b border-zinc-800 mb-3 sm:mb-6">
                         <div>
                           <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-400 font-semibold flex items-center gap-1.5">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                             Active Workspace
                           </span>
-                          <h3 className="text-xl font-bold text-white mt-1">Engineering Boards</h3>
+                          <h3 className="text-lg sm:text-xl font-bold text-white mt-0.5 sm:mt-1">Engineering Boards</h3>
                         </div>
-                        <span className="px-3 py-1 rounded-lg bg-indigo-500 text-white font-semibold text-xs">+ Create Board</span>
+                        <span className="px-2.5 sm:px-3 py-1 rounded-lg bg-indigo-500 text-white font-semibold text-xs shrink-0">+ Create Board</span>
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <div className="p-4 rounded-xl bg-[#18181b] border border-zinc-800 hover:border-zinc-700">
-                          <h4 className="font-semibold text-white text-sm">Sprint 14 — Core Flow</h4>
-                          <p className="text-[11px] font-mono text-zinc-400 mt-4">4 cols • 11 tasks</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
+                        <div className="p-3 sm:p-4 rounded-xl bg-[#18181b] border border-zinc-800 hover:border-zinc-700 transition-colors flex items-center justify-between sm:block">
+                          <div>
+                            <h4 className="font-semibold text-white text-xs sm:text-sm">Sprint 14 — Core Flow</h4>
+                            <p className="text-[10px] sm:text-[11px] font-mono text-zinc-400 mt-0.5 sm:mt-4">4 cols • 11 tasks</p>
+                          </div>
+                          <span className="sm:hidden text-zinc-500 text-xs font-mono">→</span>
                         </div>
-                        <div className="p-4 rounded-xl bg-[#18181b] border border-zinc-800 hover:border-zinc-700">
-                          <h4 className="font-semibold text-white text-sm">Mobile App v2</h4>
-                          <p className="text-[11px] font-mono text-zinc-400 mt-4">3 cols • 8 tasks</p>
+                        <div className="p-3 sm:p-4 rounded-xl bg-[#18181b] border border-zinc-800 hover:border-zinc-700 transition-colors flex items-center justify-between sm:block">
+                          <div>
+                            <h4 className="font-semibold text-white text-xs sm:text-sm">Mobile App v2</h4>
+                            <p className="text-[10px] sm:text-[11px] font-mono text-zinc-400 mt-0.5 sm:mt-4">3 cols • 8 tasks</p>
+                          </div>
+                          <span className="sm:hidden text-zinc-500 text-xs font-mono">→</span>
                         </div>
-                        <div className="p-4 rounded-xl bg-[#18181b] border border-zinc-800 hover:border-zinc-700">
-                          <h4 className="font-semibold text-white text-sm">AI Copilot Roadmap</h4>
-                          <p className="text-[11px] font-mono text-zinc-400 mt-4">4 cols • 14 tasks</p>
+                        <div className="p-3 sm:p-4 rounded-xl bg-[#18181b] border border-zinc-800 hover:border-zinc-700 transition-colors flex items-center justify-between sm:block">
+                          <div>
+                            <h4 className="font-semibold text-white text-xs sm:text-sm">AI Copilot Roadmap</h4>
+                            <p className="text-[10px] sm:text-[11px] font-mono text-zinc-400 mt-0.5 sm:mt-4">4 cols • 14 tasks</p>
+                          </div>
+                          <span className="sm:hidden text-zinc-500 text-xs font-mono">→</span>
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between text-xs font-mono text-zinc-500 pt-4 border-t border-zinc-800">
-                      <span>Realtime WebSockets: Connected</span>
-                      <span>RLS Security: Enforced</span>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between text-[10px] sm:text-xs font-mono text-zinc-500 pt-3 sm:pt-4 border-t border-zinc-800 gap-1 sm:gap-0 mt-3 sm:mt-0">
+                      <span className="flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                        Realtime WebSockets: Connected
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                        RLS Security: Enforced
+                      </span>
                     </div>
                   </div>
                 </div>

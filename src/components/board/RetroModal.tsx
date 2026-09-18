@@ -147,17 +147,91 @@ export const RetroModal = ({ boardId, onClose }: RetroModalProps) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-900/40 dark:bg-black/60 backdrop-blur-sm animate-backdrop-fade">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-zinc-900/40 dark:bg-black/60 backdrop-blur-sm animate-backdrop-fade">
       <div 
         role="dialog"
         aria-modal="true"
         aria-label="AI Retrospectives"
-        className="bg-white dark:bg-[#18181b] w-full max-w-5xl h-[85vh] rounded-xl shadow-2xl border border-zinc-200 dark:border-zinc-800 flex overflow-hidden animate-modal-pop"
+        className="bg-white dark:bg-[#18181b] w-full max-w-5xl h-[92vh] sm:h-[85vh] rounded-xl sm:rounded-2xl shadow-2xl border border-zinc-200 dark:border-zinc-800 flex flex-col md:flex-row overflow-hidden animate-modal-pop"
         onClick={e => e.stopPropagation()}
       >
-        
-        {/* Left Sidebar: Retro History */}
-        <div className="w-64 bg-zinc-50 dark:bg-[#121214] border-r border-zinc-200 dark:border-zinc-800/80 flex flex-col shrink-0">
+        {/* Mobile Header & Action Bar */}
+        <div className="md:hidden border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-[#121214] shrink-0">
+          {/* Top Bar: Title + Close Button */}
+          <div className="p-3 sm:p-4 flex items-center justify-between border-b border-zinc-200/70 dark:border-zinc-800/70">
+            <h3 className="font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2 text-sm sm:text-base">
+              <svg className="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+              AI Retrospectives
+            </h3>
+            <button 
+              onClick={onClose} 
+              aria-label="Close retrospective modal"
+              className="p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 rounded-lg min-w-[36px] min-h-[36px] flex items-center justify-center transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+          </div>
+
+          {/* Action Row: Generate Button + Past Retros Horizontal Scroll */}
+          <div className="p-2.5 sm:p-3 flex flex-col gap-2">
+            <button
+              onClick={handleGenerate}
+              disabled={generating || cooldownSeconds > 0}
+              aria-label={generating ? 'Analyzing board' : cooldownSeconds > 0 ? `Rate limit cooldown active, wait ${cooldownSeconds} seconds` : 'Generate Retro'}
+              className="w-full flex items-center justify-center gap-2 bg-indigo-500 hover:bg-indigo-600 active:scale-[0.98] text-white px-3 py-2 rounded-lg font-medium text-xs sm:text-sm transition-all shadow-sm disabled:opacity-50 min-h-[38px]"
+            >
+              {generating ? (
+                <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+              ) : cooldownSeconds > 0 ? (
+                <svg className="w-3.5 h-3.5 animate-spin text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" strokeWidth="2" strokeDasharray="30 60" /></svg>
+              ) : (
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
+              )}
+              {generating ? 'Analyzing...' : cooldownSeconds > 0 ? `Wait (${cooldownSeconds}s)` : 'Generate Retro'}
+            </button>
+
+            {/* Past Retros Pill Row */}
+            {loading ? (
+              <div className="flex gap-2 animate-pulse py-1">
+                <div className="h-6 w-24 bg-zinc-200 dark:bg-zinc-800 rounded-md"></div>
+                <div className="h-6 w-24 bg-zinc-200 dark:bg-zinc-800 rounded-md"></div>
+              </div>
+            ) : retros.length > 0 ? (
+              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 dark:text-zinc-400 font-bold shrink-0 mr-1">Past:</span>
+                {retros.map(retro => (
+                  <div key={retro.id} className="flex items-center shrink-0">
+                    <button
+                      onClick={() => setSelectedRetro(retro)}
+                      className={`px-2.5 py-1 rounded-md text-[11px] font-mono transition-colors ${
+                        selectedRetro?.id === retro.id
+                          ? 'bg-indigo-600 text-white font-bold shadow-xs'
+                          : 'bg-zinc-200/80 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-300 dark:hover:bg-zinc-700 font-medium'
+                      }`}
+                    >
+                      {new Date(retro.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    </button>
+                    <button
+                      onClick={(e) => handleDeleteRetro(e, retro.id)}
+                      disabled={deletingRetroId === retro.id}
+                      className="p-1 text-zinc-400 hover:text-red-500 disabled:opacity-50 min-w-[24px] min-h-[24px] flex items-center justify-center rounded"
+                      aria-label={`Delete retro from ${new Date(retro.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
+                    >
+                      {deletingRetroId === retro.id ? (
+                        <div className="w-2.5 h-2.5 border border-zinc-400 border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                      )}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        </div>
+
+        {/* Left Sidebar: Retro History (Desktop only) */}
+        <div className="hidden md:flex md:w-64 bg-zinc-50 dark:bg-[#121214] border-r border-zinc-200 dark:border-zinc-800/80 flex-col shrink-0">
           <div className="p-4 border-b border-zinc-200 dark:border-zinc-800/80">
             <h3 className="font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
               <svg className="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
@@ -222,8 +296,9 @@ export const RetroModal = ({ boardId, onClose }: RetroModalProps) => {
         </div>
 
         {/* Right Content: Retro Markdown Viewer */}
-        <div className="flex-1 flex flex-col relative bg-white dark:bg-[#18181b]">
-          <div className="absolute top-4 right-4 z-10">
+        <div className="flex-1 flex flex-col relative bg-white dark:bg-[#18181b] min-w-0 min-h-0 overflow-hidden">
+          {/* Desktop Close Button */}
+          <div className="hidden md:block absolute top-4 right-4 z-10">
             <button 
               onClick={onClose} 
               aria-label="Close retrospective modal"
@@ -233,21 +308,21 @@ export const RetroModal = ({ boardId, onClose }: RetroModalProps) => {
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-8 custom-scrollbar">
             {generating ? (
-              <div className="h-full flex flex-col items-center justify-center text-zinc-600 dark:text-zinc-400 space-y-4">
+              <div className="h-full min-h-[220px] flex flex-col items-center justify-center text-zinc-600 dark:text-zinc-400 space-y-4">
                 <div className="w-12 h-12 border-4 border-indigo-200 border-t-indigo-500 rounded-full animate-spin"></div>
-                <p className="font-medium animate-pulse">Sensei is analyzing your board...</p>
+                <p className="font-medium animate-pulse text-sm sm:text-base">Sensei is analyzing your board...</p>
               </div>
             ) : selectedRetro ? (
-              <div className="prose prose-zinc dark:prose-invert max-w-3xl mx-auto prose-headings:font-bold prose-a:text-indigo-500">
+              <div className="prose prose-zinc dark:prose-invert max-w-3xl mx-auto prose-headings:font-bold prose-headings:text-zinc-900 dark:prose-headings:text-zinc-100 prose-a:text-indigo-500 break-words text-sm sm:text-base leading-relaxed">
                 <ReactMarkdown>{selectedRetro.content}</ReactMarkdown>
               </div>
             ) : (
-              <div className="h-full flex flex-col items-center justify-center text-zinc-500 dark:text-zinc-400">
-                <svg className="w-16 h-16 mb-4 opacity-40 text-zinc-400 dark:text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
-                <p className="font-medium">Generate your first AI Retrospective</p>
-                <p className="text-sm mt-1">Get insights on what went well and what got stuck.</p>
+              <div className="h-full min-h-[220px] flex flex-col items-center justify-center text-zinc-500 dark:text-zinc-400 text-center p-4">
+                <svg className="w-14 h-14 sm:w-16 sm:h-16 mb-4 opacity-40 text-zinc-400 dark:text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                <p className="font-medium text-sm sm:text-base">Generate your first AI Retrospective</p>
+                <p className="text-xs sm:text-sm mt-1 text-zinc-400">Get insights on what went well and what got stuck.</p>
               </div>
             )}
           </div>
